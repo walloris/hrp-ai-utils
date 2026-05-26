@@ -1,0 +1,55 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'ru.nzhilik'
+version = '0.1'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // JSON processing
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.0'
+
+    // HTTP client
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.3.1'
+
+    // Logging with logback for file output
+    implementation 'ch.qos.logback:logback-classic:1.5.6'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testImplementation 'org.mockito:mockito-core:5.12.0'
+}
+
+application {
+    mainClass = 'ru.nzhilik.Main'
+}
+
+tasks.withType(Test) {
+    useJUnitPlatform()
+}
+
+tasks.named('jar') {
+    archiveFileName = 'mcp-opensearch-v.0.1-alpha.jar'
+    manifest {
+        attributes 'Main-Class': 'ru.nzhilik.Main'
+    }
+}
+
+tasks.named('shadowJar') {
+    archiveFileName = 'mcp-opensearch-all-v.0.1-alpha.jar'
+}

@@ -1,0 +1,21 @@
+# Gradle build output
+build/
+.gradle/
+
+# IDE files
+.idea/
+
+# Logs
+mcp-cookie.log
+build/mcp.log
+mcp-query.log
+
+# Distribution archives
+dist/
+distributions/
+
+# Generated sources
+generated/
+
+# ShadowJar
+libs/mcp-opensearch-all.jar

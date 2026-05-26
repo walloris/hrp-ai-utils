@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+<!--    <property name="LOG_FILE" value="mcp.log" />-->
+
+<!--    &lt;!&ndash; Console appender &ndash;&gt;-->
+<!--    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">-->
+<!--        <encoder>-->
+<!--            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>-->
+<!--        </encoder>-->
+<!--    </appender>-->
+
+<!--    &lt;!&ndash; File appender &ndash;&gt;-->
+<!--    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
+<!--        <file>${LOG_FILE}</file>-->
+<!--        <encoder>-->
+<!--            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>-->
+<!--        </encoder>-->
+<!--        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">-->
+<!--            <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.gz</fileNamePattern>-->
+<!--            <maxHistory>7</maxHistory>-->
+<!--        </rollingPolicy>-->
+<!--    </appender>-->
+
+<!--    &lt;!&ndash; Root logger - only log to file (stdout is used for MCP protocol) &ndash;&gt;-->
+<!--    <root level="INFO">-->
+<!--        <appender-ref ref="FILE" />-->
+<!--    </root>-->
+
+<!--    &lt;!&ndash; Debug logs to file only &ndash;&gt;-->
+<!--    <logger name="ru.nzhilik.mcp" level="DEBUG" additivity="false">-->
+<!--        <appender-ref ref="FILE" />-->
+<!--    </logger>-->
+</configuration>
