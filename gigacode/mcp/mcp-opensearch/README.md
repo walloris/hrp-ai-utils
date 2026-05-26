@@ -14,14 +14,15 @@ MCP сервер для доступа к корпоративному OpenSearc
 
 **Или** используйте fat JAR из папки `compiled`, если он уже готов.
 
-### Шаг 2: Получение X-HRP-PERSON-ID и set-cookie
+### Шаг 2: Получение X-HRP-PERSON-ID и cookie для авторизации
 
-1. Перейдите на https://hr-log.sberbank.ru/kibana/app/opensearch_dashboards_overview#/
+1. Перейдите на https://hr-log.sberbank.ru/techlogs/app/data-explorer/discover#
 2. Откройте DevTools (F12)
-3. Найдите запрос `POST https://hr-log.sberbank.ru/kibana/internal/search/opensearch`
-4. Из `requestHeaders` скопируйте значение заголовка `x-hrp-person-id`
-5. Сохраните его в переменной окружения `X_HRP_PERSON_ID`
-6. **Из `responseHeaders` скопируйте значение заголовка `set-cookie`** — он понадобится для инициализации cookie в шаге 5
+3. Найдите POST запрос `https://hr-log.sberbank.ru/techlogs/internal/search/opensearch-with-long-numerals`
+4. **Из `requestHeaders` скопируйте значение заголовка `x-hrp-person-id`** — он понадобится для настройки переменной окружения
+5. **Из `requestHeaders` скопируйте значение заголовка `cookie`** — он понадобится для инициализации cookie в шаге 4
+
+> **Важно**: Cookie берётся из `requestHeaders` (а не из `responseHeaders`). Это полный заголовок `cookie` с авторизационными данными.
 
 ### Шаг 3: Настройка .gigacode/settings.json
 
@@ -34,7 +35,7 @@ MCP сервер для доступа к корпоративному OpenSearc
       "command": "java",
       "args": [
         "-jar",
-        "${PATH_TO_DIRECTORY_WITH_JARS}/mcp-opensearch-all-v.0.1-alpha.jar"
+        "${PATH_TO_DIRECTORY_WITH_JARS}/mcp-opensearch-fat.jar"
       ],
       "env": {
         "COOKIE_SERVER_PORT": "8093",
@@ -55,6 +56,8 @@ MCP сервер для доступа к корпоративному OpenSearc
 
 ### Шаг 5: Инициализация cookie через локальный сервер
 
+> **Важно**: Переменная окружения `X_HRP_PERSON_ID` должна быть установлена перед запуском MCP сервера (см. шаг 3).
+
 Только после успешного запуска MCP сервера, инициализируйте cookie:
 
 ```bash
@@ -62,11 +65,11 @@ curl --request POST \
   --url http://localhost:${COOKIE_SERVER_PORT}/update_cookie \
   --header 'Content-Type: application/json' \
   --data '{
-    "cookie": "${copied set-cookie header}"
+    "cookie": "${copied cookie header}"
   }'
 ```
 
-> **Важно**: Cookie берется из `responseHeaders` того же запроса, который использовался для получения `x-hrp-person-id`.
+> **Важно**: Cookie берется из `requestHeaders` того же запроса, который использовался на шаге 2.
 
 > **Важно**: Инициализацию cookie нужно повторять в каждой новой сессии Gigacode, либо когда приходит ответ `401` в результате запроса к `search_logs` или `get_messages`.
 
@@ -107,12 +110,15 @@ curl --request POST \
   }'
 ```
 
+> **Важно**: Cookie берётся из `requestHeaders` запроса к OpenSearch на https://hr-log.sberbank.ru/techlogs/app/data-explorer/discover# (а не из `responseHeaders`).
+
 > **Важно**: Инициализацию cookie нужно повторять в каждой новой сессии Gigacode, либо когда приходит ответ `401`.
 
 ## Известные ограничения
 
 - MCP сервер, кажется, работает только в одном из поднятых экземпляров gigacode-cli. Если инструменты не работают, проверьте, что запросы идут в нужный экземпляр.
 - Cookie для авторизации действует ограниченное время — при получении `401` ошибки нужно повторно выполнить инициализацию cookie.
+- Cookie берётся из `requestHeaders` POST запроса к `https://hr-log.sberbank.ru/techlogs/internal/search/opensearch-with-long-numerals`.
 
 ## Доступные MCP инструменты
 

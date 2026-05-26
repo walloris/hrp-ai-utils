@@ -20,8 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 public class OpenSearchClient {
 
-    private static final String KIBANA_URL = "https://hr-log.sberbank.ru/kibana/internal/search/opensearch";
-    private static final String COOKIE_LOG_PATH = "/home/work/21599655@sigma.sbrf.ru/IdeaProjects/mcp/mcp-opensearch/build/mcp-cookie.log";
+    private static final String KIBANA_URL = "https://hr-log.sberbank.ru/techlogs/internal/search/opensearch-with-long-numerals";
 
     private final ObjectMapper objectMapper;
     private final CloseableHttpClient httpClient;
@@ -37,12 +36,6 @@ public class OpenSearchClient {
 
         // Load required environment variables
         this.xHrpPersonId = loadXHrpPersonId();
-
-        // Initialize with provided cookie
-        String initialCookie = loadCookie();
-        if (initialCookie != null && !initialCookie.isEmpty()) {
-            updateCookie(initialCookie);
-        }
     }
 
     private String loadXHrpPersonId() {
@@ -54,81 +47,34 @@ public class OpenSearchClient {
         return xHrpPersonId;
     }
 
-    private void setInitialCookie(String cookie) {
-        // Parse cookie and add to cookie store
-        String[] parts = cookie.split(";");
-        for (String part : parts) {
-            part = part.trim();
-            if (part.contains("=")) {
-                String name = part.substring(0, part.indexOf("="));
-                String value = part.substring(part.indexOf("=") + 1);
-                
-                BasicClientCookie basicCookie = new BasicClientCookie(name, value);
-                basicCookie.setDomain("hr-log.sberbank.ru");
-                basicCookie.setPath("/kibana");
-                basicCookie.setSecure(true);
-                cookieStore.addCookie(basicCookie);
-            }
-        }
-    }
-
-    private static String loadCookie() {
-        // 1. First check Java system property (-DOPENSEARCH_COOKIE)
-        String cookie = System.getProperty("OPENSEARCH_COOKIE");
-        if (cookie != null && !cookie.isEmpty()) {
-            return parseCookieValue(cookie);
-        }
-
-        // 2. Then check environment variable
-        cookie = System.getenv("OPENSEARCH_COOKIE");
-        if (cookie != null && !cookie.isEmpty()) {
-            return parseCookieValue(cookie);
-        }
-        return cookie;
-    }
-
-    private static String parseCookieValue(String cookie) {
-        if (cookie == null || cookie.isEmpty()) {
-            return cookie;
-        }
-        // Split by semicolon and take only parts that contain "=" (name=value pairs)
-        String[] parts = cookie.split(";");
-        StringBuilder cleaned = new StringBuilder();
-        for (String part : parts) {
-            part = part.trim();
-            if (part.contains("=") && !part.toLowerCase().startsWith("path=")
-                && !part.toLowerCase().startsWith("httponly")
-                && !part.toLowerCase().startsWith("domain=")
-                && !part.toLowerCase().startsWith("expires=")
-                && !part.toLowerCase().startsWith("max-age=")
-                && !part.toLowerCase().startsWith("secure")) {
-                if (cleaned.length() > 0) {
-                    cleaned.append("; ");
-                }
-                cleaned.append(part);
-            }
-        }
-        return cleaned.toString();
-    }
-
     public void updateCookie(String cookie) {
         // Parse and add cookie to cookieStore
-        String cleanedCookie = parseCookieValue(cookie);
-        if (cleanedCookie != null && !cleanedCookie.isEmpty()) {
-            String[] parts = cleanedCookie.split(";");
-            for (String part : parts) {
-                part = part.trim();
-                if (part.contains("=")) {
-                    String name = part.substring(0, part.indexOf("="));
-                    String value = part.substring(part.indexOf("=") + 1);
-                    
-                    BasicClientCookie basicCookie = new BasicClientCookie(name, value);
-                    basicCookie.setDomain("hr-log.sberbank.ru");
-                    basicCookie.setPath("/kibana");
-                    basicCookie.setSecure(true);
-                    cookieStore.addCookie(basicCookie);
-                }
+        String[] parts = cookie.split(";");
+        for (String part : parts) {
+            part = part.trim();
+            if (part.isEmpty()) {
+                continue;
             }
+            if (!part.contains("=")) {
+                continue;
+            }
+            
+            String name = part.substring(0, part.indexOf("=")).trim();
+            String value = part.substring(part.indexOf("=") + 1).trim();
+
+            // Skip cookie flags
+            String lowerName = name.toLowerCase();
+            if (lowerName.equals("path") || lowerName.equals("domain") || 
+                lowerName.equals("secure") || lowerName.equals("httponly") || 
+                lowerName.equals("expires") || lowerName.equals("max-age")) {
+                continue;
+            }
+
+            BasicClientCookie basicCookie = new BasicClientCookie(name, value);
+            basicCookie.setDomain("hr-log.sberbank.ru");
+            basicCookie.setPath("/techlogs");
+            basicCookie.setSecure(true);
+            cookieStore.addCookie(basicCookie);
         }
     }
 
@@ -156,13 +102,10 @@ public class OpenSearchClient {
         log.debug("Request payload for curl: {}", payload);
 
         post.setHeader("Cache-Control", "no-cache");
+        post.setHeader("Connection", "keep-alive");
         post.setHeader("Content-Type", "application/json");
-        post.setHeader("Origin", "https://hr-log.sberbank.ru");
-        post.setHeader("Pragma", "no-cache");
-        post.setHeader("Sec-Fetch-Dest", "empty");
-        post.setHeader("Sec-Fetch-Mode", "cors");
-        post.setHeader("Sec-Fetch-Site", "same-origin");
-        post.setHeader("osd-version", "1.3.15");
+        post.setHeader("osd-version", "1.6.4");
+        post.setHeader("osd-xsrf", "osd-fetch");
         post.setHeader("x-hrp-person-id", xHrpPersonId);
 
         // Add request body
