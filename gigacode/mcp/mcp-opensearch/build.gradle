@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'ru.nzhilik'
-version = '0.1'
+version = '0.1.1'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -44,12 +44,12 @@ tasks.withType(Test) {
 }
 
 tasks.named('jar') {
-    archiveFileName = 'mcp-opensearch-v.0.1-alpha.jar'
+    archiveFileName = 'mcp-opensearch.jar'
     manifest {
         attributes 'Main-Class': 'ru.nzhilik.Main'
     }
 }
 
 tasks.named('shadowJar') {
-    archiveFileName = 'mcp-opensearch-all-v.0.1-alpha.jar'
+    archiveFileName = 'mcp-opensearch-fat.jar'
 }
