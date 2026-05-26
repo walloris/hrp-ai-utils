@@ -36,9 +36,9 @@ gigacode
 
 ### Установка jq
 - `jq` — https://github.com/jqlang/jq/releases
-> скачать нужный релиз. если у вас mac apple silicon то качаем `jq-macos-arm64`
-> После скачивания просто положи файл в любую папку например (например ~/local/bin)
-> Переименовать jq-linux-arm64 в jq
+  1. скачать нужный релиз. если у вас mac apple silicon то качаем `jq-macos-arm64`
+  2. После скачивания просто положи файл в любую папку например (например ~/local/bin)
+  3. Переименовать `jq-macos-arm64` в `jq`
 ```bash
 # Сделать файл исполняемым
 chmod +x ~/local/bin/jq
