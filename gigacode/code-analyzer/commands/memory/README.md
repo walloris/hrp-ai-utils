@@ -16,6 +16,6 @@
 ```
 
 ## Команды
-- init - изучить новый проект
-- update - обновить проектный контекст
-- repair - восстановить `.gigacode/settings.json` или memory-файлы
+- memory:init - изучить новый проект
+- memory:update - обновить проектный контекст
+- memory:repair - восстановить `.gigacode/settings.json` или memory-файлы
