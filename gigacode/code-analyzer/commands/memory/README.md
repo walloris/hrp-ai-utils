@@ -1,4 +1,4 @@
-# Onboarding commands
+# Memory commands
 
 ## Описание
 Создаёт или обновляет память проекта в `.gigacode/memory/`.
@@ -6,7 +6,13 @@
 После прохождения онбординга создадутся все необходимы файлы и больше нечего делать не нужно.
 
 ## Установка
-Положить папку `onboarding` целиком в папку `~/.gigacode/commands/`
+Положить папку `memory` целиком в папку `~/.gigacode/commands/`
+
+~/.gigacode/commands/
+├── memory/
+│   ├── init.md
+│   ├── repair.md
+│   └── update.md
 
 ## Команды
 - init - изучить новый проект
