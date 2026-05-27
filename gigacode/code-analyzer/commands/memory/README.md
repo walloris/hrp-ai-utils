@@ -7,12 +7,13 @@
 
 ## Установка
 Положить папку `memory` целиком в папку `~/.gigacode/commands/`
-
+```
 ~/.gigacode/commands/
 ├── memory/
 │   ├── init.md
 │   ├── repair.md
 │   └── update.md
+```
 
 ## Команды
 - init - изучить новый проект
