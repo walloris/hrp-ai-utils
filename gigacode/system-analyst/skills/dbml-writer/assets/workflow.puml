@@ -1,0 +1,19 @@
+@startuml
+title Создание DBML навыка
+
+actor User
+participant "GigaCode" as GC
+participant "Skill" as Skill
+
+User -> GC: Триггер dbml-writer
+GC -> Skill: Загрузка SKILL.md
+Skill --> GC: Базовые инструкции
+GC -> Skill: Загрузка conventions.md (при необходимости)
+Skill --> GC: Конвенции проекта
+GC -> User: Предоставление шаблона/документации
+User -> GC: Запрос конкретной схемы
+GC -> Skill: Загрузка schema-template.dbml (при необходимости)
+Skill --> GC: Пример структуры
+GC -> User: Сгенерированная DBML спецификация
+
+@enduml

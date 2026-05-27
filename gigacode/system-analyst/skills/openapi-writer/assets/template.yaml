@@ -1,0 +1,140 @@
+# OpenAPI 3.0.1 Specification Template
+
+## Basic Structure
+```yaml
+openapi: 3.0.1
+info:
+  title: Service Name
+  version: 1.0.0
+  description: |
+    Service description in Russian
+    - Feature 1
+    - Feature 2
+
+servers:
+  - url: http://iftpulse.com:443/v1
+    description: IFT контур
+  - url: http://psipulse.com:443/api/v1
+    description: PSI контур
+  - url: http://prompulse.com:443/api/v1
+    description: PROM контур
+
+paths:
+  # Add endpoints here
+
+components:
+  schemas: # Add DTOs here
+  securitySchemes: # Add auth if needed
+```
+
+## Endpoint Template
+```yaml
+/voe/api/v1/resource:
+  get:
+    tags:
+      - resource
+    summary: Краткое описание
+    description: Полное описание на русском языке
+    operationId: getResource
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          description: Идентификатор ресурса
+      - name: filter
+        in: query
+        required: false
+        schema:
+          type: string
+          description: Фильтр
+    responses:
+      '200':
+        description: Успешный ответ
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceDto'
+      '404':
+        description: Ресурс не найден
+  post:
+    tags:
+      - resource
+    summary: Создать ресурс
+    description: Создает новый ресурс
+    operationId: createResource
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateResourceDto'
+    responses:
+      '201':
+        description: Ресурс создан
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceDto'
+```
+
+## Schema Template
+```yaml
+ResourceDto:
+  type: object
+  properties:
+    id:
+      type: integer
+      format: int64
+      description: Идентификатор
+    name:
+      type: string
+      description: Название
+    created_at:
+      type: string
+      format: date-time
+      description: Дата создания
+    updated_at:
+      type: string
+      format: date-time
+      description: Дата обновления
+  required:
+    - id
+    - name
+```
+
+## Common Data Types
+
+| Type | Format | Description |
+|------|--------|-------------|
+| string | - | String |
+| string | date | Date (YYYY-MM-DD) |
+| string | date-time | Date-time (ISO 8601) |
+| integer | int32 | 32-bit integer |
+| integer | int64 | 64-bit integer |
+| number | - | Decimal number |
+| boolean | - | Boolean |
+
+## Common Responses
+
+```yaml
+responses:
+  '200':
+    description: Успешный ответ
+  '201':
+    description: Создано
+  '204':
+    description: Нет содержимого
+  '400':
+    description: Неверный запрос
+  '401':
+    description: Не авторизован
+  '403':
+    description: Доступ запрещен
+  '404':
+    description: Не найдено
+  '500':
+    description: Внутренняя ошибка сервера
+```
