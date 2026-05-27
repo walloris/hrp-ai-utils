@@ -34,15 +34,25 @@ gigacode
 
 ## Установка
 
+Копируем папку `gigacode-notify` в любую директорию
+
 ```bash
-mkdir ~/.local/plugin # любая папка где будет лежать плагин 
-cd ~/.local/plugin
-git clone https://stash.sigma.sbrf.ru/projects/HRPLATFORM/repos/hrp-ai-utils/browse/gigacode/notify/gigacode-notify
 cd gigacode-notify
 ./install.sh
 ```
 
-Добавь алиас в `~/.zshrc`:
+## Добавить переменные руками
+Добавить функцию в `~/.zshrc`:
+```bash
+echo '
+# >>> gigacode-notify >>>
+gigacode() {
+  command gigacode --experimental-hooks "$@"
+}
+# <<< gigacode-notify <<<' >> ~/.zshrc
+```
+
+Или добавить алиас в `~/.zshrc` но могут быть рекурсии, лучше дать другое название просто:
 ```bash
 alias gigacode='gigacode --experimental-hooks'
 ```
