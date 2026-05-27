@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # ──────────────────────────────────────────────────────────────────────────────
-# GigaCode Notify Plugin v1.2.0
-# macOS notification hook for gigacode-cli (fork of qwen-code)
+# GigaCode Notify Plugin
 # Зависимости: python3 (встроен в macOS), osascript
 # ──────────────────────────────────────────────────────────────────────────────
 
