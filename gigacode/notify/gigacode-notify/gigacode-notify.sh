@@ -1,43 +1,57 @@
 #!/usr/bin/env bash
 # ──────────────────────────────────────────────────────────────────────────────
-# GigaCode Notify Plugin v1.1.0
+# GigaCode Notify Plugin v1.2.0
 # macOS notification hook for gigacode-cli (fork of qwen-code)
-#
-# GitHub: https://github.com/YOUR_USERNAME/gigacode-notify
-# Install: ./install.sh
-# Docs:    README.md
-#
-# Hook events supported:
-#   PreToolUse, PostToolUse, Notification, PermissionRequest,
-#   Stop, SubagentStop, StopFailure, SessionEnd
+# Зависимости: python3 (встроен в macOS), osascript
 # ──────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
 
-# ── Config ───────────────────────────────────────────────────────────────────
-DEBUG_LOG="${GIGACODE_NOTIFY_LOG:-}"           # задайте путь для дебаг-лога
+# ── Config ────────────────────────────────────────────────────────────────────
+DEBUG_LOG="${GIGACODE_NOTIFY_LOG:-}"
 
 # ── Read stdin ────────────────────────────────────────────────────────────────
 INPUT=$(cat)
 
-# ── Debug log (опционально) ───────────────────────────────────────────────────
+# ── Debug log ─────────────────────────────────────────────────────────────────
 if [[ -n "$DEBUG_LOG" ]]; then
   echo "$(date '+%H:%M:%S') RAW: $INPUT" >> "$DEBUG_LOG"
 fi
 
+# json_get <json> <key> [default]
+# Извлекает строковое или булево значение по ключу верхнего уровня.
+json_get() {
+  local json="$1"
+  local key="$2"
+  local default="${3:-}"
+  python3 -c "
+import sys, json
+try:
+    data = json.loads(sys.argv[1])
+    val = data.get('$key')
+    if val is None:
+        print('$default')
+    else:
+        # bool -> lowercase string, всё остальное -> str
+        print(str(val).lower() if isinstance(val, bool) else str(val))
+except Exception:
+    print('$default')
+" "$json"
+}
+
 # ── Parse JSON ────────────────────────────────────────────────────────────────
-HOOK_EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // "Unknown"')
+HOOK_EVENT=$(json_get "$INPUT" "hook_event_name" "Unknown")
 
 if [[ -n "$DEBUG_LOG" ]]; then
   echo "$(date '+%H:%M:%S') EVENT: $HOOK_EVENT" >> "$DEBUG_LOG"
 fi
 
-AGENT_ID=$(echo "$INPUT" | jq -r '.agent_id // ""')
-AGENT_TYPE=$(echo "$INPUT" | jq -r '.agent_type // ""')
-TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // ""')
-NOTIF_TYPE=$(echo "$INPUT" | jq -r '.notification_type // ""')
-NOTIF_MSG=$(echo "$INPUT" | jq -r '.message // ""')
-LAST_MSG=$(echo "$INPUT" | jq -r '.last_assistant_message // ""' | head -c 120)
+AGENT_ID=$(json_get "$INPUT" "agent_id")
+AGENT_TYPE=$(json_get "$INPUT" "agent_type")
+TOOL_NAME=$(json_get "$INPUT" "tool_name")
+NOTIF_TYPE=$(json_get "$INPUT" "notification_type")
+NOTIF_MSG=$(json_get "$INPUT" "message")
+LAST_MSG=$(json_get "$INPUT" "last_assistant_message" | head -c 120)
 
 # ── Agent label ───────────────────────────────────────────────────────────────
 if [[ -n "$AGENT_ID" ]]; then
@@ -47,14 +61,12 @@ else
 fi
 
 # ── Notification helper ───────────────────────────────────────────────────────
-# notify <title> <subtitle> <message> [sound]
 notify() {
   local title="$1"
   local subtitle="$2"
   local message="$3"
   local sound="${4:-default}"
 
-  # Экранируем кавычки для osascript
   title="${title//\"/\\\"}"
   subtitle="${subtitle//\"/\\\"}"
   message="${message//\"/\\\"}"
@@ -74,25 +86,25 @@ tool_label() {
 case "$HOOK_EVENT" in
 
   "PreToolUse")
-    REQUIRES_APPROVAL=$(echo "$INPUT" | jq -r '.requires_approval // false')
+    REQUIRES_APPROVAL=$(json_get "$INPUT" "requires_approval" "false")
     if [[ "$REQUIRES_APPROVAL" == "true" ]]; then
       TOOL_INFO=$(tool_label)
       notify "⏳ Требуется подтверждение" "${AGENT_LABEL}${TOOL_INFO}" \
-             "Агент ждёт вашего апрува. Вернитесь в терминал." "Ping"
+             "Агент ждёт вашего апрува. Вернитесь в терминал." "Tink"
     fi
     ;;
 
   "PermissionRequest")
     TOOL_INFO=$(tool_label)
     notify "⏳ Требуется подтверждение" "${AGENT_LABEL}${TOOL_INFO}" \
-           "Агент ждёт вашего апрува. Вернитесь в терминал." "Ping"
+           "Агент ждёт вашего апрува. Вернитесь в терминал." "Tink"
     ;;
 
   "Stop")
     SHORT_MSG="${LAST_MSG:0:80}"
     [[ ${#LAST_MSG} -gt 80 ]] && SHORT_MSG="${SHORT_MSG}…"
     notify "✅ Агент завершил работу" "$AGENT_LABEL" \
-           "${SHORT_MSG:-Задача выполнена}" "Glass"
+           "${SHORT_MSG:-Задача выполнена}" "Blow"
     ;;
 
   "SubagentStop")
@@ -101,17 +113,16 @@ case "$HOOK_EVENT" in
     SUBTITLE="$AGENT_LABEL"
     [[ -n "$AGENT_TYPE" ]] && SUBTITLE="${AGENT_LABEL} (${AGENT_TYPE})"
     notify "✅ Субагент завершил задачу" "$SUBTITLE" \
-           "${SHORT_MSG:-Подзадача выполнена}" "Bottle"
+           "${SHORT_MSG:-Подзадача выполнена}" "Blow"
     ;;
 
   "StopFailure")
-    ERROR_TYPE=$(echo "$INPUT" | jq -r '.error // "unknown"')
-    ERROR_DETAIL=$(echo "$INPUT" | jq -r '.error_details // ""' | head -c 100)
+    ERROR_TYPE=$(json_get "$INPUT" "error" "unknown")
+    ERROR_DETAIL=$(json_get "$INPUT" "error_details" | head -c 100)
     notify "❌ Ошибка агента" "${AGENT_LABEL} (${ERROR_TYPE})" \
            "${ERROR_DETAIL:-Неизвестная ошибка}" "Basso"
     ;;
 
 esac
 
-# Всегда выходим с кодом 0 — не блокируем работу агента
 exit 0

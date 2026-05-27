@@ -12,7 +12,7 @@ macOS уведомления для gigacode-cli.
 
 ## Требования
 
-- `jq`
+- `python3` должен стоять на маках по умолчанию
 - `gigacode --experimental-hooks` включает хуки
 - `Редактор скриптов` допуск к уведомлениям.
 
@@ -34,24 +34,9 @@ gigacode
 
 ## Установка
 
-### Установка jq
-- `jq` — https://github.com/jqlang/jq/releases
-  1. скачать нужный релиз. если у вас mac apple silicon то качаем `jq-macos-arm64`
-  2. После скачивания просто положи файл в любую папку например (например ~/local/bin)
-  3. Переименовать `jq-macos-arm64` в `jq`
 ```bash
-# Сделать файл исполняемым
-chmod +x ~/local/bin/jq
-
-# Прописать в PATH ~/bin
-echo 'export PATH="$HOME/local/bin:$PATH"' >> ~/.zshrc
-
-# Перечитать настройки (чтобы не перезапускать терминал)
-source ~/.zshrc
-```
-
-### Установка плагина уведомлений
-```bash
+mkdir ~/.local/plugin # любая папка где будет лежать плагин 
+cd ~/.local/plugin
 git clone https://stash.sigma.sbrf.ru/projects/HRPLATFORM/repos/hrp-ai-utils/browse/gigacode/notify/gigacode-notify
 cd gigacode-notify
 ./install.sh
@@ -60,12 +45,4 @@ cd gigacode-notify
 Добавь алиас в `~/.zshrc`:
 ```bash
 alias gigacode='gigacode --experimental-hooks'
-```
-
-## Дебаг
-
-```bash
-# Включить лог
-export GIGACODE_NOTIFY_LOG=/tmp/gigacode-notify-debug.log
-tail -f /tmp/gigacode-notify-debug.log
 ```
