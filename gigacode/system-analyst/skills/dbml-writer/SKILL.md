@@ -13,22 +13,19 @@ Table table_name {
   id bigint [primary key, increment]
   name varchar(255) [not null, unique]
   description text [nullable]
-  created_at timestamp with time zone [default: now()]
+  created_at timestamptz [default: "now()"]
 }
 ```
 
 ### Fields Syntax
 - **Field name**: lowercase_with_underscores
-- **Data types**: bigint, varchar(n), text, boolean, timestamp with time zone, integer, double precision
+- **Data types**: bigint, varchar(n), text, boolean, **timestamptz**, integer, double precision
 - **Constraints**: `primary key`, `not null`, `unique`, `increment`, `nullable`
-- **Defaults**: `default: now()`, `default: true`, `default: false`
+- **Defaults**: `default: "now()"`, `default: true`, `default: false`
 - **Notes**: Use Russian language for comments in `note` attribute
 
 ### Relationships (Foreign Keys)
 ```dbml
--- Reference syntax
-ref: > referenced_table.referenced_column
-
 -- Example:
 Table operation {
   id_operation bigint [primary key]
@@ -40,14 +37,15 @@ Table structure {
 }
 ```
 
+
 ### Indexes
 ```dbml
 -- Index syntax
 Ref: idx_name < table.column [name: idx_name]
 
 -- Example:
-Ref: idx_operation_identifier < operation.identifier [name: idx_operation_identifier]
-Ref: uk_user_policy_person_id < user_policy.person_id [name: uk_user_policy_person_id]
+Ref: idx_operation_identifier < operation.identifier 
+Ref: uk_user_policy_person_id < user_policy.person_id 
 ```
 
 ## Project-Specific Conventions
@@ -55,11 +53,6 @@ Ref: uk_user_policy_person_id < user_policy.person_id [name: uk_user_policy_pers
 ### Primary Key Naming
 - Use `id_<table>` format (e.g., `id_structure`, `id_fos`, `id_operation`, `id_question`, `id_answer`, `id_feedback`)
 
-### Timestamp Fields
-- Use `create_date` for creation timestamps
-- Use `modify_date` for modification timestamps
-- Always use `timestamp with time zone` type
-- Default to `now()` for both
 
 ### Boolean Fields
 - Use `is_<feature>` or `has_<feature>` naming (e.g., `is_active`, `is_archive`, `active_qa`)
@@ -115,30 +108,84 @@ doc-as-code/
 
 ## Workflow:
 
-1. Review existing database schemas in `doc-as-code/database_dbml/`
-2. Analyze requirements for database changes
-3. Update or create `.dbml` files following project conventions
-4. Include:
-   - Complete table structures with all fields
-   - Primary keys, foreign keys, and indexes
-   - Russian language comments in `note` attributes
-   - Timestamp defaults (`create_date`, `modify_date`)
-   - Boolean field defaults
-5. Validate consistency with existing schemas
-6. Save files to logical directory structure
-7. Create directories if they don't exist
+1. **For existing `.dbml` files**:
+   - Read the existing file from `doc-as-code/database_dbml/`
+   - Add new tables, fields, indexes, or references
+   - Update existing definitions as needed
+   - Preserve existing structure and formatting
+   - Save the complete updated file back
+
+2. **For new `.dbml` files**:
+   - Create the file following project conventions
+   - Include only valid DBML syntax
+   - No SQL code, comments (--), or migration scripts
+
+3. Always:
+   - Review existing database schemas in `doc-as-code/database_dbml/`
+   - Analyze requirements for database changes
+   - Update or create `.dbml` files following project conventions
+   - Include:
+     - Complete table structures with all fields
+     - Primary keys, foreign keys, and indexes
+     - Russian language comments in `note` attributes
+     - Boolean field defaults
+   - Validate consistency with existing schemas
+   - Save files to logical directory structure
+   - Create directories if they don't exist
 
 ## Important Rules:
 
-- **DO NOT** write SQL or migration scripts — your output is `.dbml` schema documentation
+- **DO NOT** write SQL or migration scripts — your output is `.dbml` schema documentation only
+- **DO NOT** include SQL code blocks, CREATE TABLE statements, or SQL comments (--) in your DBML files
+- **DO NOT** use SQL-style comments in your DBML output
 - **ALWAYS** use Russian language for comments in `note` attributes
 - **ALWAYS** follow existing naming conventions in the project
-- **ALWAYS** include timestamp fields with `default: now()`
-- **ALWAYS** use `timestamp with time zone` for all timestamp fields
+- **ALWAYS** include timestamp fields with `default: "now()"`
+- **ALWAYS** use `timestamptz` for all timestamp fields
 - **DO NOT** modify generated code — your work is documentation only
 - **ALWAYS** validate foreign key relationships with `ref: >` syntax
 - **DO NOT** create circular references
 - **ALWAYS** check directory existence and create if missing before saving
+
+## Working with Existing Files:
+
+When a `.dbml` file exists in `doc-as-code/database_dbml/`:
+
+1. **READ** the existing file first to understand its structure
+2. **ADD** new tables, fields, or indexes to the existing content
+3. **UPDATE** existing definitions as needed
+4. **PRESERVE** existing structure, formatting, and comments
+5. **APPEND** new sections rather than replacing the entire file
+
+### File Structure:
+- Table definitions at the top
+- References/relationships after tables
+- Indexes after references
+- Comments in `note` attributes (Russian language)
+
+### Examples:
+
+**Good** - Adding to existing file:
+```dbml
+// Existing tables...
+
+Table new_table {
+  id bigint [pk]
+  // ...
+}
+
+// Existing indexes...
+
+Ref: idx_new_table_column < new_table.column [name: idx_new_table_column]
+```
+
+**Bad** - Creating file with SQL code (NEVER do this):
+```sql
+-- Схема базы данных
+-- Версия: 1.0.0
+
+CREATE TABLE structure (...)...
+```
 
 ## Example from Project
 
@@ -153,16 +200,18 @@ Table operation {
   id_operation bigint [pk, note: 'Первичный ключ']
   id_fos bigint [not null, ref: > form_details.id_fos, note: 'Ссылка на form_details']
   id_structure bigint [not null, ref: > structure.id_structure, note: 'Ссылка на structure']
-  create_date timestamptz [not null, default: 'now()', note: 'Дата создания операции']
+  create_date timestamptz [not null, default: "now()", note: 'Дата создания операции']
   author_id text [not null, note: 'Идентификатор автора операции']
   type bigint [not null, ref: > dict.id, note: 'Тип операции']
   name text [note: 'Название операции']
   active_company boolean [note: 'Активность для компании']
   finish_date timestamptz [note: 'Дата завершения']
-  is_active boolean [default: 'true', note: 'Активна']
-  is_archive boolean [default: 'false', note: 'Архив']
+  is_active boolean [default: "true", note: 'Активна']
+  is_archive boolean [default: "false", note: 'Архив']
   version int [note: 'Версия']
 }
 ```
+
+
 
 You are the gatekeeper of database schema clarity — your work ensures developers understand the data structure accurately.
