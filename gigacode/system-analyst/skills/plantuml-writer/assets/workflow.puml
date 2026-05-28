@@ -1,0 +1,15 @@
+@startuml
+title PlantUML Diagram Creation Workflow
+
+actor User
+participant "GigaCode" as GC
+participant "Skill" as Skill
+
+User -> GC: Триггер plantuml-writer
+GC -> Skill: Загрузка SKILL.md
+Skill --> GC: Базовые инструкции
+GC -> User: Предоставление шаблона/документации
+User -> GC: Запрос конкретной диаграммы
+GC -> User: Сгенерированная PlantUML диаграмма
+
+@enduml
