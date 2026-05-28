@@ -66,13 +66,20 @@ notify() {
   local message="$3"
   local sound="${4:-default}"
 
-  title="${title//\"/\\\"}"
-  subtitle="${subtitle//\"/\\\"}"
-  message="${message//\"/\\\"}"
+  /usr/bin/python3 - "$title" "$subtitle" "$message" "$sound" <<'PYEOF'
+import subprocess, sys
 
-  /usr/bin/osascript \
-    -e "display notification \"$message\" with title \"$title\" subtitle \"$subtitle\" sound name \"$sound\""
+def esc(s):
+    return s.replace("\\", "\\\\").replace('"', '\\"')
+
+t, s, m, snd = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+script = 'display notification "{}" with title "{}" subtitle "{}" sound name "{}"'.format(
+    esc(m), esc(t), esc(s), esc(snd)
+)
+subprocess.run(["/usr/bin/osascript", "-e", script])
+PYEOF
 }
+
 
 # ── Tool label helper ─────────────────────────────────────────────────────────
 tool_label() {
@@ -89,14 +96,14 @@ case "$HOOK_EVENT" in
     if [[ "$REQUIRES_APPROVAL" == "true" ]]; then
       TOOL_INFO=$(tool_label)
       notify "⏳ Требуется подтверждение" "${AGENT_LABEL}${TOOL_INFO}" \
-             "Агент ждёт вашего апрува. Вернитесь в терминал." "Tink"
+             "Агент ждёт вашего апрува. Вернитесь в терминал." "Ping"
     fi
     ;;
 
   "PermissionRequest")
     TOOL_INFO=$(tool_label)
     notify "⏳ Требуется подтверждение" "${AGENT_LABEL}${TOOL_INFO}" \
-           "Агент ждёт вашего апрува. Вернитесь в терминал." "Tink"
+           "Агент ждёт вашего апрува. Вернитесь в терминал." "Ping"
     ;;
 
   "Stop")
