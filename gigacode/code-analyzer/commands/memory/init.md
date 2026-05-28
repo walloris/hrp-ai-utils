@@ -112,29 +112,7 @@ Confidence:
 
 ---
 
-## Шаг 4 — Создание структуры памяти
-
-Создай:
-
-```text
-.gigacode/
-├── settings.json
-└── memory/
-    ├── project.md
-    ├── architecture.md
-    ├── stack.md
-    ├── conventions.md
-    └── references/
-        ├── naming.md
-        ├── layering.md
-        ├── error-handling.md
-        ├── testing.md
-        └── api-patterns.md
-```
-
----
-
-## Шаг 5 — Содержимое файлов
+## Шаг 4 — Содержимое файлов
 
 ### `project.md`
 Обязательно включи:
@@ -225,7 +203,7 @@ Confidence:
 
 ---
 
-## Шаг 6 — Настройка контекста
+## Шаг 5 — Настройка контекста
 
 Создай `.gigacode/settings.json`:
 
@@ -246,12 +224,11 @@ Confidence:
 
 ---
 
-## Шаг 7 — Завершение и валидация
+## Шаг 6 — Завершение и валидация
 
 1. Убедись, что `.gigacode/` добавлен в `.gitignore`
 2. Проверь:
    - все memory-файлы существуют
-   - в `settings.json` корректные пути
    - неизвестные данные помечены `<не определено>`
    - покрытие сущностей полное
    - `conventions.md` основан на реальных примерах
@@ -267,7 +244,6 @@ Confidence:
 Режим: init
 
 Создано:
-- .gigacode/settings.json
 - .gigacode/memory/project.md
 - .gigacode/memory/architecture.md
 - .gigacode/memory/stack.md

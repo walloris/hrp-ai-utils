@@ -115,32 +115,10 @@ Confidence:
 
 ---
 
-## Шаг 5 — Проверка settings.json
-
-Убедись, что `.gigacode/settings.json` корректен:
-
-```json
-{
-  "context": {
-    "fileName": [
-      ".gigacode/memory/project.md",
-      ".gigacode/memory/architecture.md",
-      ".gigacode/memory/stack.md",
-      ".gigacode/memory/conventions.md"
-    ]
-  }
-}
-```
-
-Если файл корректен — не трогай.
-
----
-
-## Шаг 6 — Завершение и валидация
+## Шаг 5 — Завершение и валидация
 
 1. Проверь:
    - все memory-файлы существуют
-   - в `settings.json` корректные пути
    - неизвестные данные помечены `<не определено>`
    - покрытие сущностей полное
    - `conventions.md` основан на реальных примерах
