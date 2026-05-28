@@ -1,27 +1,7 @@
--- ==========================================
--- Spine VOE Database Schema Template
--- Module: [module-name]
--- ==========================================
-
--- Таблица: [table_name]
--- Описание: [описание таблицы]
 Table [table_name] {
-  id bigint [primary key, increment]
-  created_at timestamp with time zone [default: now()]
-  updated_at timestamp with time zone [default: now()]
+  id bigint [pk, increment, note: 'Первичный ключ']
+  created_at timestamp with time zone [not null, default: 'now()', note: 'Дата и время создания']
+  updated_at timestamp with time zone [not null, default: 'now()', note: 'Дата и время последнего обновления']
 }
 
--- Индексы
-Ref: idx_[table_name]_created_at < [table_name].created_at [name: idx_[table_name]_created_at]
-
--- Комментарии
-comment on table [table_name] is '[описание таблицы на русском]';
-comment on column [table_name].id is 'Идентификатор записи (PK)';
-comment on column [table_name].created_at is 'Дата и время создания';
-comment on column [table_name].updated_at is 'Дата и время последнего обновления';
-
--- ==========================================
--- Пример заполнения справочника
--- ==========================================
-
--- INSERT INTO [dict_table] (value) VALUES ('status1'), ('status2');
+Ref: idx_[table_name]_created_at < [table_name].created_at [name: idx_[table_name]_created_at, note: 'Индекс для фильтрации по дате создания']

@@ -114,16 +114,24 @@ This is a feedback collection service. Key entities:
 - **CRITICAL: REST REQUESTS MUST BE ON ONE LINE** - Write entire request on **one line** (method + path + body)
   - Wrong: `FE -> BE: POST /api/endpoint` (newline) `Body: {...}`
   - Right: `FE -> BE: POST /api/endpoint Body: {key: value}`
-- **CRITICAL: SQL QUERIES MUST BE ON ONE LINE** - Write entire query on **one line** (no line breaks)
+- **CRITICAL: SQL QUERIES MUST BE ON ONE LINE** - Write entire query on **one line** (no line breaks, no lists)
   - Wrong: `BE -> DB: INSERT INTO table (col1, col2)` (newline) `VALUES (...)`
+  - Wrong: `BE -> DB: Агрегация показателей: - field1: SUM(field1) - field2: AVG(field2)`
   - Right: `BE -> DB: INSERT INTO table (col1, col2) VALUES (val1, val2)`
-- **DO NOT** use multi-line SQL or body formatting in diagrams
+  - Right: `BE -> DB: Агрегация показателей: SUM(feedback_count), AVG(rating)`
+- **SIMPLIFY complex descriptions** - use comma-separated format instead of lists
 
 ### Database Documentation (.dbml)
 - Define complete table structures with all fields.
 - Specify relationships using `Ref` keywords.
 - Include indexes for frequently queried fields.
 - Document default values and constraints clearly.
+- **CRITICAL: Prefer existing tables over new ones**
+  - Analyze existing tables before creating new ones
+  - Reuse existing structure for similar data if possible
+  - Consider adding columns to existing tables instead of new table creation
+  - Only create new tables when business requirements clearly justify it
+  - Document why existing tables cannot be reused
 
 ## Workflow:
 
@@ -144,6 +152,18 @@ This is a feedback collection service. Key entities:
 - **DO NOT** write or modify Liquibase migration files in `HRP-pipeline/spine-voe/dbscripts/liquibase/voe/`
 - **ALWAYS** use `.puml` for business process diagrams
 - **ALWAYS** use `.dbml` for database schema changes
+- **CRITICAL: DO NOT include logging and auditing in diagrams unless explicitly required**
+  - Do NOT add: `Service -> Service: Логирование...`
+  - Do NOT add: `Service -> AuditService: Audit...Event`
+  - Do NOT add: Kafka event publishing for simple operations
+  - **Only include logging/audit if explicitly mentioned in business requirements**
+- **ALWAYS** use `==` for numbered main steps
+- **ALWAYS** use `alt-else-end` for conditional flows
+- **DO NOT** forget to close conditional blocks
+- **DO NOT** use external plugins or custom syntax — stick to standard PlantUML
+- **ALWAYS** validate participant aliases are used consistently
+- **DO NOT** modify generated code — your work is documentation only
+- **ALWAYS** check directory existence and create if missing before saving
 - **CRITICAL: REST REQUESTS IN .puml FILES MUST BE ON ONE LINE**
 - **CRITICAL: SQL QUERIES IN .puml FILES MUST BE ON ONE LINE**
 - Always reference the OpenAPI spec when proposing or modifying API contracts

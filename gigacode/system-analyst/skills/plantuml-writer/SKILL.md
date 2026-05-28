@@ -73,16 +73,19 @@ end
   ```
 
 ### SQL Database Queries
-- Write the entire SQL query on **one line**
-- Use simplified but readable format
-- Examples:
+- **CRITICAL: Write entire SQL query on ONE LINE - no line breaks, no lists, no multiline format**
+- **DO NOT** use:
   ```puml
-  Backend -> Database: SELECT user_policy WHERE person_id = uuid
-  Backend -> Database: SELECT collect_feedback WHERE id_user_policy = ? AND id_operation = ? AND isActive = true AND status = 'draft'
-  Backend -> Database: INSERT INTO collect_feedback
-  Backend -> Database: UPDATE collect_feedback SET isActive = false, status = 'complete'
-  Backend -> Database: UPDATE operation SET csat = new_csat
+  Backend -> DB: INSERT INTO aggregation_metrics
+    - feedback_count: SUM(feedback_count)
+    - rating_average: AVG(rating)
   ```
+- **DO** use:
+  ```puml
+  Backend -> DB: INSERT INTO aggregation_metrics feedback_count:SUM, rating_average:AVG
+  ```
+- **Simplify complex operations** - focus on what operation is performed, not detailed parameters
+- Use abbreviated format for list items in descriptions
 
 ## Core Responsibilities:
 
