@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from datetime import datetime, timedelta
 
+
 STATE_DIR = Path(os.path.expanduser("~/.gigacode/hooks"))
 STATE_FILE = STATE_DIR / "remind_state.json"
 LOG_FILE = STATE_DIR / "remind.log"
@@ -77,8 +78,10 @@ CODE_EXTENSIONS = {
     ".sql",
 }
 
+
 def utcnow():
     return datetime.utcnow()
+
 
 def parse_dt(value: str | None):
     if not value:
@@ -87,6 +90,7 @@ def parse_dt(value: str | None):
         return datetime.fromisoformat(value)
     except Exception:
         return None
+
 
 def log(message: str):
     if not ENABLE_LOG:
@@ -98,12 +102,14 @@ def log(message: str):
     except Exception:
         pass
 
+
 def load_state():
     try:
         with STATE_FILE.open("r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return {}
+
 
 def save_state(state):
     try:
@@ -115,6 +121,7 @@ def save_state(state):
     except Exception:
         pass
 
+
 def empty_session_state():
     return {
         "read_count": 0,
@@ -122,24 +129,31 @@ def empty_session_state():
         "mixed_count": 0,
         "last_seen_at": None,
         "last_deny_at": None,
+        # сюда можно будет добавить blocked_files, если захочешь per-file hard block
     }
+
 
 def is_serena_tool(tool_name: str) -> bool:
     return any(tool_name.startswith(prefix) for prefix in SERENA_TOOL_PREFIXES)
 
+
 def is_read_tool(tool_name: str) -> bool:
     return tool_name in READ_TOOLS
+
 
 def is_search_tool(tool_name: str) -> bool:
     return tool_name in SEARCH_TOOLS
 
+
 def is_low_level_tool(tool_name: str) -> bool:
     return is_read_tool(tool_name) or is_search_tool(tool_name)
+
 
 def reset_counts(sess: dict):
     sess["read_count"] = 0
     sess["search_count"] = 0
     sess["mixed_count"] = 0
+
 
 def deny(reason: str, additional_context: str):
     payload = {
@@ -153,6 +167,7 @@ def deny(reason: str, additional_context: str):
     sys.stdout.write(json.dumps(payload))
     sys.stdout.flush()
 
+
 def normalize_rel_path(file_path: str, cwd: str | None):
     try:
         p = Path(file_path)
@@ -165,6 +180,7 @@ def normalize_rel_path(file_path: str, cwd: str | None):
         return str(p)
     except Exception:
         return file_path or ""
+
 
 def should_skip_read(file_path: str, cwd: str | None) -> bool:
     if not file_path:
@@ -191,17 +207,42 @@ def should_skip_read(file_path: str, cwd: str | None) -> bool:
 
     return False
 
+
 def is_code_read(file_path: str) -> bool:
     if not file_path:
         return False
     suffix = Path(file_path).suffix.lower()
     return suffix in CODE_EXTENSIONS
 
+
 def extract_file_path(payload: dict) -> str:
     tool_input = payload.get("tool_input") or payload.get("toolInput") or {}
     if isinstance(tool_input, dict):
-        return str(tool_input.get("file_path") or tool_input.get("filePath") or "").strip()
+        return str(
+            tool_input.get("file_path")
+            or tool_input.get("filePath")
+            or ""
+        ).strip()
     return ""
+
+
+def build_read_context(file_path: str | None) -> str:
+    # Для подсказки имени символа возьмём stem файла
+    symbol_hint = Path(file_path).stem if file_path else "the target symbol"
+    rel_hint = file_path or "<relative_path_to_file>"
+
+    return (
+        "You are repeatedly reading source files directly. "
+        "Do NOT call ReadFile again for this code exploration task.\n"
+        "Use Serena MCP tools instead, choosing one of these real tools:\n"
+        f"- mcp__serena__get_symbols_overview with relative_path set to {rel_hint}, "
+        "to inspect top-level symbols in the file\n"
+        f"- mcp__serena__find_symbol with name_path_pattern set to {symbol_hint} and include_body=true, "
+        "to read that symbol body directly\n"
+        "- mcp__serena__search_for_pattern if you do not know the exact symbol name\n"
+        "There is no Serena read_file tool. Do not invent tool names such as mcp__serena__read_file."
+    )
+
 
 def main():
     raw = sys.stdin.read()
@@ -230,19 +271,23 @@ def main():
     last_seen_at = parse_dt(sess.get("last_seen_at"))
     last_deny_at = parse_dt(sess.get("last_deny_at"))
 
+    # Idle reset
     if last_seen_at and now - last_seen_at > timedelta(minutes=RESET_MINUTES):
         reset_counts(sess)
         log(f"reset session={session_id} reason=idle-timeout")
 
     sess["last_seen_at"] = now.isoformat()
 
+    # Полный reset на любом инструменте Serena
     if is_serena_tool(tool_name):
         reset_counts(sess)
+        sess["last_deny_at"] = None
         state[session_id] = sess
         save_state(state)
         log(f"reset session={session_id} reason=serena-tool tool={tool_name}")
         return 0
 
+    # Skip non-code / config reads
     if is_read_tool(tool_name):
         if should_skip_read(file_path, cwd):
             state[session_id] = sess
@@ -256,6 +301,7 @@ def main():
             log(f"skip-noncode-read session={session_id} tool={tool_name} file={file_path}")
             return 0
 
+    # Non-low-level tools полностью сбрасывают счётчики
     if not is_low_level_tool(tool_name):
         reset_counts(sess)
         state[session_id] = sess
@@ -263,12 +309,51 @@ def main():
         log(f"reset session={session_id} reason=non-low-level tool={tool_name}")
         return 0
 
-    if last_deny_at and (now - last_deny_at).total_seconds() < COOLDOWN_SECONDS:
+    # Проверяем, уже ли мы в состоянии "over threshold"
+    over_read = sess["read_count"] >= READ_THRESHOLD
+    over_search = sess["search_count"] >= SEARCH_THRESHOLD
+    over_mixed = sess["mixed_count"] >= MIXED_THRESHOLD
+
+    if over_read or over_search or over_mixed:
+        # cooldown управляет только тем, хотим ли мы спамить длинным текстом,
+        # но deny остаётся deny
+        in_cooldown = last_deny_at and (now - last_deny_at).total_seconds() < COOLDOWN_SECONDS
+
+        reason = None
+        additional_context = None
+
+        if over_read:
+            reason = (
+                "Too many consecutive code-file read calls. "
+                "ReadFile is blocked for this task; use Serena tools get_symbols_overview or find_symbol instead."
+            )
+            additional_context = build_read_context(file_path)
+        elif over_search:
+            reason = "Too many consecutive grep/search calls without using symbolic tools."
+            additional_context = (
+                "You are repeatedly using search-like tools. Switch to Serena symbolic search tools, "
+                "such as mcp__serena__search_for_pattern or mcp__serena__find_symbol, "
+                "or use a more targeted exploration strategy."
+            )
+        elif over_mixed:
+            reason = "Too many consecutive low-level code exploration tool calls without using symbolic tools."
+            additional_context = (
+                "You have been alternating between low-level read/search tools for code exploration. "
+                "Use Serena semantic navigation (find_symbol, get_symbols_overview, find_referencing_symbols) "
+                "instead of more ReadFile/Glob."
+            )
+
+        sess["last_deny_at"] = now.isoformat()
         state[session_id] = sess
         save_state(state)
-        log(f"cooldown session={session_id} tool={tool_name}")
+        log(
+            f"deny session={session_id} tool={tool_name} "
+            f"over_threshold=True cooldown={bool(in_cooldown)}"
+        )
+        deny(reason, additional_context)
         return 0
 
+    # --- Normal counting (under threshold) ---
     if is_read_tool(tool_name):
         sess["read_count"] += 1
         sess["search_count"] = 0
@@ -286,43 +371,44 @@ def main():
             f"read={sess['read_count']} search={sess['search_count']} mixed={sess['mixed_count']}"
         )
 
+    # Проверяем, не ударили ли порог только что
     reason = None
     additional_context = None
 
     if sess["read_count"] >= READ_THRESHOLD:
-        reason = "Too many consecutive code-file read calls without using symbolic tools."
-        additional_context = (
-            "You are repeatedly reading source files directly. "
-            "From now on, instead of using ReadFile, you MUST use the Serena MCP tools, e.g.:\n"
-            "- mcp__serena__find_symbol to locate the application entrypoint or symbols\n"
-            "- mcp__serena__get_symbols_overview to understand module structure\n"
-            "After this hook fires, do not call ReadFile for this purpose again; call Serena tools instead."
+        reason = (
+            "Too many consecutive code-file read calls. "
+            "ReadFile is blocked for this task; use Serena tools get_symbols_overview or find_symbol instead."
         )
+        additional_context = build_read_context(file_path)
     elif sess["search_count"] >= SEARCH_THRESHOLD:
         reason = "Too many consecutive grep/search calls without using symbolic tools."
         additional_context = (
-            "You are repeatedly using search-like tools. Switch to symbolic search, references, definitions, "
-            "or more targeted structural navigation."
+            "You are repeatedly using search-like tools. Switch to Serena symbolic search tools, "
+            "such as mcp__serena__search_for_pattern or mcp__serena__find_symbol, "
+            "or use a more targeted exploration strategy."
         )
     elif sess["mixed_count"] >= MIXED_THRESHOLD:
         reason = "Too many consecutive low-level code exploration tool calls without using symbolic tools."
         additional_context = (
             "You have been alternating between low-level read/search tools for code exploration. "
-            "Use semantic navigation, symbol lookup, references, or a more targeted exploration strategy."
+            "Use Serena semantic navigation (find_symbol, get_symbols_overview, find_referencing_symbols) "
+            "instead of more ReadFile/Glob."
         )
 
     if reason:
         sess["last_deny_at"] = now.isoformat()
-        reset_counts(sess)
+        # Важно: НЕ сбрасываем счётчики, чтобы последующие попытки тоже блокировались
         state[session_id] = sess
         save_state(state)
-        log(f"deny session={session_id} tool={tool_name} reason={reason}")
+        log(f"deny session={session_id} tool={tool_name} just_hit_threshold")
         deny(reason, additional_context)
         return 0
 
     state[session_id] = sess
     save_state(state)
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())
