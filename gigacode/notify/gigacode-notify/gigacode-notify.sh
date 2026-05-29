@@ -66,20 +66,17 @@ notify() {
   local message="$3"
   local sound="${4:-default}"
 
-  /usr/bin/python3 - "$title" "$subtitle" "$message" "$sound" <<'PYEOF'
-import subprocess, sys
-
-def esc(s):
-    return s.replace("\\", "\\\\").replace('"', '\\"')
-
-t, s, m, snd = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
-script = 'display notification "{}" with title "{}" subtitle "{}" sound name "{}"'.format(
-    esc(m), esc(t), esc(s), esc(snd)
-)
-subprocess.run(["/usr/bin/osascript", "-e", script])
-PYEOF
+  /usr/bin/osascript \
+    -e 'on run argv' \
+    -e 'display notification (item 3 of argv) with title (item 1 of argv) subtitle (item 2 of argv) sound name (item 4 of argv)' \
+    -e 'end run' \
+    -- "$title" "$subtitle" "$message" "$sound"
 }
 
+# Вывод bell-символа → Terminal bounce + badge (если включено в настройках)
+ring_bell() {
+  printf '\a' > /dev/tty 2>/dev/null || true
+}
 
 # ── Tool label helper ─────────────────────────────────────────────────────────
 tool_label() {
@@ -95,6 +92,7 @@ case "$HOOK_EVENT" in
     REQUIRES_APPROVAL=$(json_get "$INPUT" "requires_approval" "false")
     if [[ "$REQUIRES_APPROVAL" == "true" ]]; then
       TOOL_INFO=$(tool_label)
+      ring_bell  # ← bounce + badge
       notify "⏳ Требуется подтверждение" "${AGENT_LABEL}${TOOL_INFO}" \
              "Агент ждёт вашего апрува. Вернитесь в терминал." "Ping"
     fi
@@ -102,6 +100,7 @@ case "$HOOK_EVENT" in
 
   "PermissionRequest")
     TOOL_INFO=$(tool_label)
+    ring_bell  # ← bounce + badge
     notify "⏳ Требуется подтверждение" "${AGENT_LABEL}${TOOL_INFO}" \
            "Агент ждёт вашего апрува. Вернитесь в терминал." "Ping"
     ;;
@@ -109,6 +108,7 @@ case "$HOOK_EVENT" in
   "Stop")
     SHORT_MSG="${LAST_MSG:0:80}"
     [[ ${#LAST_MSG} -gt 80 ]] && SHORT_MSG="${SHORT_MSG}…"
+    ring_bell  # ← bounce + badge
     notify "✅ Агент завершил работу" "$AGENT_LABEL" \
            "${SHORT_MSG:-Задача выполнена}" "Blow"
     ;;
@@ -118,6 +118,7 @@ case "$HOOK_EVENT" in
     [[ ${#LAST_MSG} -gt 80 ]] && SHORT_MSG="${SHORT_MSG}…"
     SUBTITLE="$AGENT_LABEL"
     [[ -n "$AGENT_TYPE" ]] && SUBTITLE="${AGENT_LABEL} (${AGENT_TYPE})"
+    ring_bell  # ← bounce + badge
     notify "✅ Субагент завершил задачу" "$SUBTITLE" \
            "${SHORT_MSG:-Подзадача выполнена}" "Blow"
     ;;
@@ -125,6 +126,7 @@ case "$HOOK_EVENT" in
   "StopFailure")
     ERROR_TYPE=$(json_get "$INPUT" "error" "unknown")
     ERROR_DETAIL=$(json_get "$INPUT" "error_details" | head -c 100)
+    ring_bell  # ← bounce + badge
     notify "❌ Ошибка агента" "${AGENT_LABEL} (${ERROR_TYPE})" \
            "${ERROR_DETAIL:-Неизвестная ошибка}" "Basso"
     ;;
