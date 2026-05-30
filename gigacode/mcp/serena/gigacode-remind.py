@@ -4,10 +4,13 @@ remind.py — GigaCode hook: блокирует повторные low-level too
 направляя агента к Serena MCP инструментам.
 
 Счётчики (invariant):
-  read_count   — растёт при read_tool, сбрасывается при search_tool или non-low-level
-  search_count — растёт при search_tool, сбрасывается при read_tool или non-low-level
-  mixed_count  — растёт при любом low-level tool, сбрасывается при non-low-level или serena
+  read_count      — растёт при read_tool, сбрасывается при search_tool или non-low-level
+  search_count    — растёт при search_tool, сбрасывается при read_tool или non-low-level
+  mixed_count     — растёт при любом low-level tool, сбрасывается при non-low-level или serena
+  serena_streak   — растёт при Serena tool, сбрасывается при non-Serena
   Смысл: read и search — взаимоисключающие серии; mixed считает суммарную длину серии.
+  Если подряд было 2 Serena tool calls, обычные low-level вызовы снова разрешаются
+  (сбрасываем low-level счётчики).
 """
 
 import fcntl
@@ -65,9 +68,11 @@ def is_low_level_tool(name: str) -> bool:
 READ_THRESHOLD   = int(os.getenv("GIGACODE_REMIND_READ_THRESHOLD",   "3"))
 SEARCH_THRESHOLD = int(os.getenv("GIGACODE_REMIND_SEARCH_THRESHOLD", "3"))
 MIXED_THRESHOLD  = int(os.getenv("GIGACODE_REMIND_MIXED_THRESHOLD",  "4"))
+SERENA_STREAK_RESET_THRESHOLD = int(os.getenv("GIGACODE_REMIND_SERENA_STREAK_RESET_THRESHOLD", "2"))
 COOLDOWN_SECONDS = int(os.getenv("GIGACODE_REMIND_COOLDOWN_SECONDS", "120"))
 RESET_MINUTES    = int(os.getenv("GIGACODE_REMIND_RESET_MINUTES",    "15"))
 ENABLE_LOG = os.getenv("GIGACODE_REMIND_LOG", "0") == "1"
+
 
 
 # ---------------------------------------------------------------------------
@@ -110,7 +115,7 @@ if _extra_skip:
 
 
 # ---------------------------------------------------------------------------
-# Deny messages — единое место для всех текстов
+# Deny messages — official Serena-style reason texts
 # ---------------------------------------------------------------------------
 
 def _build_read_context(file_path: str) -> str:
@@ -131,20 +136,19 @@ def _build_read_context(file_path: str) -> str:
 
 
 _DENY_SEARCH = (
-    "Too many consecutive grep/search calls without using symbolic tools.",
+    "Use Serena’s symbolic tools instead of more consecutive code-search calls without using Serena tools in between.",
     "You are repeatedly using search-like tools. Switch to Serena symbolic search tools, "
     "such as mcp__serena__search_for_pattern or mcp__serena__find_symbol, "
     "or use a more targeted exploration strategy.",
 )
 _DENY_MIXED = (
-    "Too many consecutive low-level code exploration tool calls without using symbolic tools.",
+    "Use Serena’s symbolic tools instead of more consecutive low-level code exploration calls without using Serena tools in between.",
     "You have been alternating between low-level read/search tools for code exploration. "
     "Use Serena semantic navigation (find_symbol, get_symbols_overview, find_referencing_symbols) "
     "instead of more ReadFile/Glob.",
 )
 _DENY_READ_REASON = (
-    "Too many consecutive code-file read calls. "
-    "ReadFile is blocked for this task; use Serena tools get_symbols_overview or find_symbol instead."
+    "Use Serena’s symbolic tools instead of more consecutive code-file-read calls without using Serena tools in between."
 )
 
 
@@ -200,11 +204,12 @@ def _parse_dt(value: Optional[str]) -> Optional[datetime]:
 
 def _empty_session() -> dict:
     return {
-        "read_count":   0,
-        "search_count": 0,
-        "mixed_count":  0,
-        "last_seen_at": None,
-        "last_deny_at": None,
+        "read_count":    0,
+        "search_count":  0,
+        "mixed_count":   0,
+        "serena_streak": 0,
+        "last_seen_at":  None,
+        "last_deny_at":  None,
     }
 
 
@@ -342,6 +347,7 @@ def _apply_idle_reset(sess: dict, now: datetime) -> bool:
     last_seen = _parse_dt(sess.get("last_seen_at"))
     if last_seen and now - last_seen > timedelta(minutes=RESET_MINUTES):
         _reset_counts(sess)
+        sess["serena_streak"] = 0
         return True
     return False
 
@@ -386,11 +392,21 @@ def main() -> int:
         sess["last_seen_at"] = now.isoformat()
 
         if is_serena_tool(tool_name):
-            _reset_counts(sess)
-            sess["last_deny_at"] = None
+            sess["serena_streak"] = int(sess.get("serena_streak", 0)) + 1
+
+            if sess["serena_streak"] >= SERENA_STREAK_RESET_THRESHOLD:
+                _reset_counts(sess)
+                sess["last_deny_at"] = None
+                log(
+                    f"reset session={session_id} reason=serena-streak "
+                    f"tool={tool_name} serena_streak={sess['serena_streak']}"
+                )
+
             _save_session(session_id, sess)
-            log(f"reset session={session_id} reason=serena-tool tool={tool_name}")
             return 0
+
+        # любой не-serena вызов прерывает streak serena
+        sess["serena_streak"] = 0
 
         if is_read_tool(tool_name):
             if tool_name == "read_file":
@@ -414,7 +430,8 @@ def main() -> int:
         log(
             f"count session={session_id} tool={tool_name} "
             f"read={sess['read_count']} search={sess['search_count']} "
-            f"mixed={sess['mixed_count']} file={file_path}"
+            f"mixed={sess['mixed_count']} serena_streak={sess['serena_streak']} "
+            f"file={file_path}"
         )
 
         threshold_result = _check_thresholds(sess, file_path)
