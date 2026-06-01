@@ -52,15 +52,20 @@ def _case_container_tag(root):
     return children.most_common(1)[0][0] if children else None
 
 
+def _direct_child_tags(element) -> set:
+    """Local tag names of direct child elements only (not nested descendants)."""
+    return {_local(child.tag) for child in list(element)}
+
+
 def _required_child_tags(root, case_tag):
-    """Child tags present in EVERY case node of the example -> mandatory."""
+    """Direct child tags present in EVERY case node of the example -> mandatory."""
     cases = [el for el in root.iter() if _local(el.tag) == case_tag]
     if not cases:
         return set()
-    per_case = [{_local(c.tag) for c in case.iter() if c is not case} for case in cases]
+    per_case = [_direct_child_tags(case) for case in cases]
     required = set(per_case[0])
-    for s in per_case[1:]:
-        required &= s
+    for tags in per_case[1:]:
+        required &= tags
     return required
 
 
@@ -102,7 +107,7 @@ def validate(generated: Path, example: Path):
             problems.append(f"нет ни одного узла кейса <{case_tag}>")
         required = _required_child_tags(ex_root, case_tag)
         for case in gen_cases:
-            present = {_local(c.tag) for c in case.iter() if c is not case}
+            present = _direct_child_tags(case)
             missing = required - present
             if missing:
                 cid = case.get("id") or "<без id>"

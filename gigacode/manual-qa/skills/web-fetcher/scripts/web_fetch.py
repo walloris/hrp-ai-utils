@@ -39,9 +39,21 @@ def main():
     headers = {}
     if args.header:
         for h in args.header:
-            if ':' in h:
-                key, value = h.split(':', 1)
-                headers[key.strip()] = value.strip()
+            if ':' not in h:
+                print(
+                    f"Invalid header (expected 'Name: value'): {h!r}",
+                    file=sys.stderr,
+                )
+                sys.exit(2)
+            key, value = h.split(':', 1)
+            key = key.strip()
+            if not key:
+                print(
+                    f"Invalid header (empty name): {h!r}",
+                    file=sys.stderr,
+                )
+                sys.exit(2)
+            headers[key] = value.strip()
     
     # Для POST/PUT/PATCH добавляем Content-Type если не задан
     if args.method in ['POST', 'PUT', 'PATCH'] and 'Content-Type' not in headers:
