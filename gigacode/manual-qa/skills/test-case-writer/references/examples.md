@@ -1,73 +1,93 @@
-# Filled examples
+# Filled examples — Zephyr / HRPQA export
 
-Worked examples for the **placeholder** schema. Regenerate these against the real example once it is provided. Scenario source: a search endpoint that returns 404 for a missing author (JIRA HRM-11330).
+Минимальный фрагмент нового кейса в формате образца. Полные примеры — в `assets/test-cases-example.xml`.
 
-## Requirement
+## Требование
 
-| ID | Требование | Приоритет |
-|----|-----------|-----------|
-| R1 | Поиск автора по имени в реалме; несуществующий → 404 | P1 |
+| ID | Требование |
+|----|-----------|
+| R1 | GET `/web/widgets/data?widgets=tandemy` при грейде &lt; 16 возвращает пустой `data` |
 
-## Positive case
-
-```xml
-<test-case id="TC-R1-01" priority="P1" type="positive">
-  <title>[P1] Поиск автора — существующий автор найден</title>
-  <requirement>R1</requirement>
-  <preconditions>В реалме "sales" существует автор "Иванов И.И."</preconditions>
-  <test-data>realm=sales, query=Иванов</test-data>
-  <steps>
-    <step number="1">
-      <action>Открыть страницу поиска авторов в реалме "sales"</action>
-      <expected>Поле поиска доступно</expected>
-    </step>
-    <step number="2">
-      <action>Ввести "Иванов" и выполнить поиск</action>
-      <expected>В списке отображается "Иванов И.И."</expected>
-    </step>
-  </steps>
-  <expected-result>HTTP 200, автор найден и показан в результатах</expected-result>
-</test-case>
-```
-
-## Negative case (404)
+## Новый testCase (фрагмент для вставки в `<testCases>`)
 
 ```xml
-<test-case id="TC-R1-02" priority="P1" type="negative">
-  <title>[P1] Поиск автора — несуществующий автор возвращает 404</title>
-  <requirement>R1</requirement>
-  <preconditions>В реалме "sales" нет автора "Петров"</preconditions>
-  <test-data>realm=sales, query=Петров</test-data>
-  <steps>
-    <step number="1">
-      <action>Выполнить поиск "Петров" в реалме "sales"</action>
-      <expected>Система обрабатывает запрос корректно</expected>
-    </step>
-  </steps>
-  <expected-result>HTTP 404 с сообщением об отсутствии автора; приложение не падает</expected-result>
-</test-case>
+<testCase id="0" key="HRPQA-TNEW-01">
+  <attachments/>
+  <confluencePageLinks/>
+  <createdBy><![CDATA[senior-manual-qa]]></createdBy>
+  <createdOn><![CDATA[2026-06-01 12:00:00 UTC]]></createdOn>
+  <customFields>
+    <customField name="Автоматизирован" type="SINGLE_CHOICE_SELECT_LIST">
+      <value><![CDATA[Готов к автоматизации]]></value>
+    </customField>
+    <customField name="АС" type="SINGLE_CHOICE_SELECT_LIST">
+      <value><![CDATA[HRP.SmartProfile (Smart профиль) [CI02295205]]]></value>
+    </customField>
+    <customField name="Проверяется при внедрении Cloud" type="SINGLE_CHOICE_SELECT_LIST">
+      <value><![CDATA[Нет]]></value>
+    </customField>
+    <customField name="Команда" type="SINGLE_CHOICE_SELECT_LIST">
+      <value><![CDATA[Профиль сотрудника [61146085]]]></value>
+    </customField>
+    <customField name="Smoke" type="SINGLE_CHOICE_SELECT_LIST">
+      <value><![CDATA[Нет]]></value>
+    </customField>
+    <customField name="Негативный" type="SINGLE_CHOICE_SELECT_LIST">
+      <value><![CDATA[Нет]]></value>
+    </customField>
+    <customField name="Вид тестирования" type="SINGLE_CHOICE_SELECT_LIST">
+      <value><![CDATA[Новый функционал]]></value>
+    </customField>
+    <customField name="Sigma" type="CHECKBOX">
+      <value><![CDATA[true]]></value>
+    </customField>
+    <customField name="Уровень теста" type="SINGLE_CHOICE_SELECT_LIST">
+      <value><![CDATA[API]]></value>
+    </customField>
+  </customFields>
+  <estimatedTime>300000</estimatedTime>
+  <folder><![CDATA[Функциональные тест-кейсы/Каркас/HRP.SmartProfile (Smart профиль) [CI02295205]/Пульс API/app_smart_profile/top600/Тандеми виджет]]></folder>
+  <issues>
+    <issue>
+      <key>R1</key>
+      <summary><![CDATA[Тандеми виджет — грейд ниже 16]]></summary>
+    </issue>
+  </issues>
+  <labels>
+    <label><![CDATA[API]]></label>
+  </labels>
+  <name><![CDATA[[P1] GET widgets=tandemy — грейд ниже 16, пустой data]]></name>
+  <objective><![CDATA[Проверить, что при грейде руководителя ниже 16 виджет tandemy возвращает пустой объект data.]]></objective>
+  <owner><![CDATA[senior-manual-qa]]></owner>
+  <precondition><![CDATA[1. У пользователя есть тандеми<br />2. Тогл show_tandemy включен<br />3. Грейд userId ниже 16]]></precondition>
+  <priority><![CDATA[Normal]]></priority>
+  <status><![CDATA[Approved]]></status>
+  <parameters/>
+  <testScript type="steps">
+    <steps>
+      <step index="0">
+        <customFields/>
+        <description><![CDATA[GET /web/widgets/data?widgets=tandemy&amp;userId=%{userId}]]></description>
+        <expectedResult><![CDATA[HTTP 200, success=true, data.code=tandemy, data.data={}]]></expectedResult>
+        <testData><![CDATA[userId — UUID пользователя с грейдом &lt; 16]]></testData>
+      </step>
+    </steps>
+  </testScript>
+  <updatedBy><![CDATA[senior-manual-qa]]></updatedBy>
+  <updatedOn><![CDATA[2026-06-01 12:00:00 UTC]]></updatedOn>
+</testCase>
 ```
 
-## Boundary case
+## Негативный кейс (фрагмент)
 
-```xml
-<test-case id="TC-R1-03" priority="P2" type="negative">
-  <title>[P2] Поиск автора — запрос длиннее 255 символов</title>
-  <requirement>R1</requirement>
-  <preconditions>Открыта страница поиска</preconditions>
-  <test-data>query = строка из 256 символов</test-data>
-  <steps>
-    <step number="1">
-      <action>Ввести строку из 256 символов и выполнить поиск</action>
-      <expected>Ввод отклонён или усечён по правилу валидации</expected>
-    </step>
-  </steps>
-  <expected-result>HTTP 400 (валидация) либо корректное усечение; ошибки сервера нет</expected-result>
-</test-case>
-```
+Тот же каркас; отличия:
 
-## Traceability output
+- `<customField name="Негативный">` → `<value><![CDATA[Да]]></value>`
+- `<name>` — явно негативный сценарий
+- `<expectedResult>` — код ошибки / пустой ответ / 4xx по ТЗ
 
-| Требование | Тест-кейсы |
-|------------|-----------|
-| R1 | TC-R1-01 (позитив), TC-R1-02 (негатив), TC-R1-03 (граница) |
+## Traceability
+
+| Требование | Ключ / issue |
+|------------|----------------|
+| R1 | `<issue><key>R1</key>` или ключ Jira `SFILE-11162` из задачи |

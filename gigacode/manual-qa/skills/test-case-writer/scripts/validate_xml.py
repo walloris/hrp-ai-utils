@@ -47,7 +47,15 @@ def _tags(root) -> set:
 
 
 def _case_container_tag(root):
-    """The most common direct child of root is treated as the 'test case' node."""
+    """Resolve the test-case element tag from the example (e.g. Zephyr export)."""
+    for el in root.iter():
+        if _local(el.tag) == "testCases":
+            kids = list(el)
+            if kids:
+                return _local(kids[0].tag)
+    for name in ("testCase", "test-case", "case"):
+        if any(_local(el.tag) == name for el in root.iter()):
+            return name
     children = Counter(_local(c.tag) for c in list(root))
     return children.most_common(1)[0][0] if children else None
 

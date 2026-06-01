@@ -69,7 +69,7 @@ manual-qa/
 | Чек-листы | Markdown | `doc-as-code/checklists/<feature>.md` |
 | Тест-план | Markdown | `doc-as-code/test-plan/<feature>.md` |
 
-> ⚠️ **TODO:** образец XML (`skills/test-case-writer/assets/test-cases-example.xml`) пока placeholder. Заменить на реальный пример проекта (TestRail / Test IT / Zephyr / Allure / кастом HRP) — скилл зеркалит структуру образца 1:1, код менять не нужно. После замены обновить `skills/test-case-writer/references/xml-format.md`.
+Образец XML: **Zephyr/Jira export** (`HRPQA`) — `skills/test-case-writer/assets/test-cases-example.xml`.
 
 ---
 

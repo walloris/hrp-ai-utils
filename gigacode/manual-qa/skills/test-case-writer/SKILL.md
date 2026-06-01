@@ -5,9 +5,9 @@ description: Generates manual test cases as an XML file that strictly mirrors a 
 
 # Test Case Writer
 
-Produce manual test cases as **XML that mirrors the example exactly**. The example file is the contract — element names, order, and nesting must match 1:1. Only values change.
+Produce manual test cases as **Zephyr/Jira XML export** (`HRPQA`) that mirrors `assets/test-cases-example.xml` exactly — element names, order, and nesting match 1:1. Only values change.
 
-> ⚠️ The canonical example lives at `assets/test-cases-example.xml`. It is currently a **TODO placeholder**. Replace it with the real project example before production use; the structure below adapts automatically once the example is updated. See `references/xml-format.md` for the field mapping.
+Формат: корень `<project>`, кейсы в `<testCases><testCase>`, шаги в `<testScript type="steps">`. См. `references/xml-format.md`.
 
 ## Golden rule
 
@@ -22,23 +22,26 @@ Produce manual test cases as **XML that mirrors the example exactly**. The examp
 
 Every test case must carry:
 
-| Field | Rule |
-|-------|------|
-| ID | Stable, unique (e.g. `TC-R1-01`). Encodes the requirement ID for traceability. |
-| Заголовок | `[<приоритет>] <что проверяем> — <условие>` |
-| Требование | The requirement ID(s) it covers (`R1`). **Mandatory** — no orphan cases. |
-| Предусловия | State/data needed before steps. |
-| Шаги | Numbered, atomic, imperative actions. |
-| Тестовые данные | Concrete values (boundary/equivalence values when relevant). |
-| Ожидаемый результат | Observable, unambiguous outcome per step / at the end. |
-| Приоритет | P1..P4 from the scenario. |
-| Тип | позитивный / негативный / граничный. |
+| Field | XML (Zephyr) |
+|-------|----------------|
+| Заголовок | `<name>` — префикс `[P1]` при необходимости |
+| Цель | `<objective>` |
+| Требование | `<issues><issue><key>` — Jira-ключ или `R1` |
+| Предусловия | `<precondition>` (CDATA, допускается HTML) |
+| Позитив/негатив | `<customField name="Негативный">` → `Да` / `Нет` |
+| Smoke | `<customField name="Smoke">` |
+| Вид тестирования | `<customField name="Вид тестирования">` |
+| Шаг | `<step index="0">` … |
+| Действие | `<description>` |
+| Ожидаемый результат | `<expectedResult>` |
+| Тестовые данные шага | `<testData>` |
+| Папка | `<folder>` — путь как в `<folders>` образца |
 
 ## Workflow
 
 1. Read `assets/test-cases-example.xml` and `references/xml-format.md` to learn the exact structure.
-2. For each scenario, create one `<test-case>` (or the example's equivalent node) by cloning the example node.
-3. Fill steps/data/expected; encode the requirement ID into the case ID and into the traceability field if the example has one.
+2. Скопируй шапку `<project>` и `<folders>` из образца; для каждого сценария клонируй один `<testCase>` из образца.
+3. Заполни поля; трассируемость `R1` → `<issues>`; шаги — в `<testScript>/<steps>/<step>`.
 4. Ensure every requirement ID from the table appears in at least one case (≥1 positive + ≥1 negative).
 5. Write the file to `doc-as-code/test-cases/<feature>.xml` (create the directory if missing).
 6. **Validate** (mandatory):
@@ -50,8 +53,8 @@ Every test case must carry:
 
 ## XML hygiene
 
-- Escape `&` `<` `>` `"` as `&amp; &lt; &gt; &quot;` inside text.
-- UTF-8 encoding; keep the XML declaration if the example has one.
+- Текстовые поля с разметкой — в `<![CDATA[...]]>` как в образце.
+- UTF-8; сохраняй `standalone="yes"` в декларации, если есть в образце.
 - One logical scenario per case — do not merge unrelated checks.
 - Keep Russian text in titles/steps/expected results.
 

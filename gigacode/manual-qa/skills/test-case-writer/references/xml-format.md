@@ -1,54 +1,126 @@
-# XML format mapping
+# XML format mapping — Zephyr / Jira export (HRPQA)
 
-How test-case fields map to XML nodes. **The example file `assets/test-cases-example.xml` is the source of truth.** This document describes the *current placeholder* schema — update it together with the example when the real project format is provided.
+**Источник истины:** `assets/test-cases-example.xml` — экспорт тест-кейсов из Zephyr for Jira (проект `HRPQA`).
 
-## Current (placeholder) schema
+Агент **зеркалит** этот XML 1:1: те же теги, порядок, вложенность. Меняются только значения и добавляются новые `<testCase>` внутри `<testCases>`.
 
+## Корневая структура
+
+```xml
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<project>
+  <projectId>...</projectId>
+  <projectKey>HRPQA</projectKey>
+  <modelVersion>1.0</modelVersion>
+  <jiraVersion>...</jiraVersion>
+  <exportDate>...</exportDate>
+  <folders>
+    <folder fullPath="..." index="N"/>
+  </folders>
+  <testCases>
+    <testCase id="..." key="HRPQA-T...">...</testCase>
+  </testCases>
+</project>
 ```
-<test-suite name="..." feature="...">      ← набор тестов
-  <test-case id="..." priority="..." type="...">   ← один кейс
-    <title>...</title>                      ← заголовок
-    <requirement>R1</requirement>           ← трассируемость к требованию (ОБЯЗАТЕЛЬНО)
-    <preconditions>...</preconditions>      ← предусловия
-    <test-data>...</test-data>              ← тестовые данные
+
+При генерации нового файла:
+- Скопируй шапку `<project>` из образца (можно оставить `projectKey` = `HRPQA`).
+- Обнови `<exportDate>` на текущую дату UTC.
+- Добавь/обнови `<folders>` под фичу.
+- Все новые кейсы — только внутри `<testCases>`.
+
+## Структура одного `<testCase>`
+
+```xml
+<testCase id="..." key="HRPQA-T...">
+  <attachments/>
+  <confluencePageLinks/>
+  <createdBy>...</createdBy>
+  <createdOn>...</createdOn>
+  <customFields>...</customFields>
+  <estimatedTime>...</estimatedTime>   <!-- опционально, если есть в образце для всех кейсов -->
+  <folder><![CDATA[путь/в/дереве/папок]]></folder>
+  <issues>
+    <issue>
+      <key>JIRA-KEY</key>
+      <summary><![CDATA[...]]></summary>
+    </issue>
+  </issues>
+  <labels>
+    <label><![CDATA[API]]></label>
+  </labels>
+  <name><![CDATA[Название кейса]]></name>
+  <objective><![CDATA[Цель / что проверяем]]></objective>
+  <owner>...</owner>
+  <precondition><![CDATA[Предусловия]]></precondition>
+  <priority><![CDATA[Normal]]></priority>
+  <status><![CDATA[Approved]]></status>
+  <parameters/>
+  <testScript type="steps">
     <steps>
-      <step number="N">
-        <action>...</action>                ← действие
-        <expected>...</expected>            ← ожидаемый результат шага
+      <step index="0">
+        <customFields/>
+        <description><![CDATA[Действие]]></description>
+        <expectedResult><![CDATA[Ожидаемый результат]]></expectedResult>
+        <testData><![CDATA[Данные]]></testData>
       </step>
     </steps>
-    <expected-result>...</expected-result>  ← итоговый результат кейса
-  </test-case>
-</test-suite>
+  </testScript>
+  <updatedBy>...</updatedBy>
+  <updatedOn>...</updatedOn>
+</testCase>
 ```
 
-## Field mapping
+Текстовые поля с HTML — оборачивай в `<![CDATA[...]]>` как в образце.
 
-| Поле кейса | XML-узел | Атрибут/тег |
-|------------|----------|-------------|
-| ID кейса | `<test-case>` | `id` |
-| Приоритет | `<test-case>` | `priority` (`P1..P4`) |
-| Тип | `<test-case>` | `type` (`positive`/`negative`) |
-| Заголовок | `<title>` | text |
-| Требование (трассировка) | `<requirement>` | text (`R1`, или несколько узлов) |
-| Предусловия | `<preconditions>` | text |
-| Тестовые данные | `<test-data>` | text |
-| Шаг | `<step>` | `number` + `<action>`/`<expected>` |
-| Итоговый результат | `<expected-result>` | text |
+## Маппинг полей агента → XML
 
-## When the real example arrives
+| Поле агента | XML |
+|-------------|-----|
+| ID кейса (внутренний) | атрибут `id` на `<testCase>` (для новых — временный, до импорта в Jira) |
+| Ключ Zephyr | атрибут `key` (`HRPQA-T...`) — для новых можно `HRPQA-TNEW-01` или оставить пустым по соглашению команды |
+| Заголовок | `<name>` |
+| Цель / описание | `<objective>` |
+| Предусловия | `<precondition>` |
+| Требование / Jira | `<issues><issue><key>R1 или HRM-12345</key><summary>...</summary></issue></issues>` |
+| Папка в дереве | `<folder>` (путь как в `<folders>/<folder fullPath=...>`) |
+| Приоритет (P1–P4) | маппинг в `<priority>`: P1→High, P2→Normal, … **или** оставить `Normal` и отразить P1 в `<name>` |
+| Позитив / негатив | `<customField name="Негативный">` → `Да` / `Нет` |
+| Smoke | `<customField name="Smoke">` → `Да` / `Нет` |
+| Вид тестирования | `<customField name="Вид тестирования">` → `Новый функционал` / `Регресс` |
+| Уровень | `<customField name="Уровень теста">` → `API` / `Web` / … |
+| АС | `<customField name="АС">` → автоматизированная система из контекста |
+| Команда | `<customField name="Команда">` → из контекста ПП |
+| Шаг N | `<step index="N-1">` (индекс с 0) |
+| Действие | `<description>` |
+| Ожидаемый результат | `<expectedResult>` |
+| Тестовые данные шага | `<testData>` |
+| Метки | `<labels><label>...</label></labels>` |
 
-1. Replace `assets/test-cases-example.xml` with the real file.
-2. Rewrite the schema block + mapping table above to match it exactly (rename nodes, reorder, add/remove fields).
-3. If the real format encodes traceability differently (e.g. a `<refs>` or custom field), point the "Требование" mapping there.
-4. Update `scripts/validate_xml.py` only if the new format needs deeper rules — by default it auto-derives the allowed structure from the example, so usually no code change is needed.
-5. Re-run validation on a sample to confirm `VALID`.
+## Обязательные customFields (ориентир из образца)
 
-## Mapping hints for common tools (pick when example is provided)
+Для каждого нового кейса заполняй набор полей как в образце (те же `name` и `type`):
 
-- **TestRail XML**: `<sections>/<section>/<cases>/<case>` with `<custom><steps_separated>`.
-- **Test IT**: sections + steps with `action`/`expected`.
-- **Zephyr/Xray**: usually CSV/JSON, but XML variants use `<testcase>` with `<step>/<data>/<result>`.
-- **Allure**: typically generated from code, not authored XML.
+- Автоматизирован
+- АС
+- Проверяется при внедрении Cloud
+- Команда
+- Smoke
+- Негативный
+- Вид тестирования
+- Sigma
+- Уровень теста
 
-Match whatever the provided example uses — do not impose one of these if it differs.
+Если поле неприменимо — возьми значение по умолчанию из ближайшего кейса в образце.
+
+## Правила генерации
+
+1. **Не удаляй** пустые узлы, которые есть в образце (`<attachments/>`, `<parameters/>`, …).
+2. **Не меняй** имена тегов и атрибутов (`testScript type="steps"`, `step index="0"`).
+3. Новый кейс = клон существующего `<testCase>` из образца + замена значений.
+4. Трассируемость требования `R1` → минимум одна запись в `<issues>` или явная ссылка в `<objective>`.
+5. После генерации — `validate_xml.py` должен вернуть `VALID`.
+
+## Импорт
+
+Готовый файл предназначен для импорта в Zephyr/Jira (проект HRPQA) или ручной доработки в UI. Агент не вызывает API импорта — только формирует XML.
