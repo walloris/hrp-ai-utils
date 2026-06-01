@@ -1,57 +1,58 @@
 ---
 name: web-fetcher
-description: Work with external APIs via HTTP requests (Python, corporate version)
+description: Work with Jira, Confluence, and Stash REST APIs via HTTP (Python, corporate SSL). Use when fetching a Jira issue, a Confluence page by pageId, or a Pull Request from Stash. Same approach as senior-backend-developer — scripts/web_fetch only, never the built-in web_fetch tool.
 ---
+
 # Web Fetcher
 
-Web fetcher skill for making secure HTTP requests to external APIs and services.
+HTTP-клиент для корпоративных API в workflow Manual QA. **Идентичен подходу `senior-backend-developer`.**
 
 ## Important: Corporate Environment Requirements
 
-**DO NOT use built-in `web_fetch` function** - it does NOT work with self-signed SSL certificates in corporate environment.
+**DO NOT use the built-in `web_fetch` / `WebFetch` tool** — it fails on self-signed SSL certificates.
+
+**DO NOT use MCP Atlassian** for Jira/Confluence in `senior-manual-qa` — use REST below.
 
 ### Use `scripts/web_fetch` or `scripts/web_fetch.py`
 
 ```bash
-# CORRECT - Python version (corporate-safe)
-./scripts/web_fetch https://api.example.com/data
+# Jira issue
+./scripts/web_fetch \
+  "https://jira.sberbank.ru/rest/api/2/issue/HRM-11330?fields=summary,description,status,issuelinks" \
+  -H 'Authorization: Bearer <TOKEN>' \
+  -o jira-issue.json
 
-# CORRECT - with output file
-./scripts/web_fetch https://api.example.com/data -o result.json
+# Confluence page (pageId from URL)
+./scripts/web_fetch \
+  "https://confluence.sberbank.ru/rest/api/content/17151460968?expand=body.storage,space,version" \
+  -H 'Authorization: Bearer <TOKEN>' \
+  -o confluence-page.json
 
-# CORRECT - with headers and POST
-./scripts/web_fetch https://api.example.com/submit -X POST -H 'Content-Type: application/json' -d '{"key":"value"}'
-
-# CORRECT - JIRA with authorization
-./scripts/web_fetch https://jira.sberbank.ru/rest/api/2/issue/HRM-12601 -H 'Authorization: Basic <base64>' -H 'Content-Type: application/json'
+# Stash PR
+./scripts/web_fetch \
+  "https://stash.sigma.sbrf.ru/rest/api/1.0/projects/HRPLATFORM/repos/<repo>/pull-requests/<id>/changes" \
+  -H 'Authorization: Bearer <TOKEN>' \
+  -o pr-changes.json
 ```
+
+Authorization may also be `Authorization: Basic <base64>` — same as in `senior-backend-developer`.
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
-| HTTPS support | Works with self-signed certificates |
-| HTTP methods | GET, POST, PUT, DELETE, PATCH |
-| Headers | Custom headers with `-H` flag |
-| Output | Print to stdout or save to file with `-o` |
-| JSON parsing | Automatic pretty-print for JSON responses |
+| HTTPS | Self-signed certificates (SSL verify disabled in script) |
+| Methods | GET, POST, PUT, DELETE, PATCH |
+| Headers | `-H 'Name: value'` (malformed headers without `:` are rejected) |
+| Output | stdout or `-o file.json` |
 
-## Security Notes
+## Security
 
-- **Never log tokens to console**
-- **Validate URLs before sending (only http/https)**
-- **Do not execute arbitrary code**
-- **Limit response size (if > 1MB, save to file)**
-- **Use `scripts/web_fetch.py` instead of curl (corporate policy)**
+- Never log tokens.
+- Save large responses to `-o` file instead of pasting into chat.
+- Only `http`/`https` URLs.
 
-## Critical Notes
+## References
 
-- **Built-in `web_fetch` function does NOT work in corporate environment (self-signed SSL error)**
-- **ALWAYS use `scripts/web_fetch` or `scripts/web_fetch.py` for external requests**
-- **Built-in fetch/jira/scraping functions do NOT support self-signed SSL certificates**
-
-## Python Script Location
-
-The script is located at: `scripts/web_fetch.py`
-
-Uses system Python (`/usr/bin/python3`) for correct SSL certificate handling.
+- `../requirements-analysis/references/sources.md` — полные рецепты Jira / Confluence / PR.
+- `scripts/web_fetch.md` — опции CLI.

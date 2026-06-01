@@ -11,9 +11,11 @@ Turn scattered inputs (Jira + Pull Request + Confluence) into one normalized, pr
 
 | Source | Tool | What to extract |
 |--------|------|-----------------|
-| Jira task | `web-fetcher` skill (Jira REST + token) | Summary, description, acceptance criteria, labels, linked issues, attachments |
-| Pull Request | Local `git` first; Stash REST via `web-fetcher` as fallback | Changed files, new/changed endpoints, DTO/field changes, config/migration changes → the **scope of change** |
-| Confluence | **MCP Atlassian** (`confluence_get_page`, `convert_to_markdown=true`) | Business rules, process flows, edge cases, NFRs |
+| Jira task | `web-fetcher` → Jira REST API (`/rest/api/2/issue/<KEY>`) | Summary, description, AC, labels, linked issues, attachments |
+| Pull Request | Local `git` first; Stash REST via `web-fetcher` as fallback | Changed files, endpoints, DTOs, config → **scope of change** |
+| Confluence | `web-fetcher` → Confluence REST API (`/rest/api/content/<pageId>`) | Business rules, flows, edge cases, NFRs (`body.storage`) |
+
+**Не использовать:** встроенный `WebFetch`, MCP Atlassian. Только `scripts/web_fetch.py` (как `senior-backend-developer`).
 
 See `references/sources.md` for concrete commands and request recipes.
 

@@ -44,9 +44,11 @@ manual-qa/
 
 | Источник | Как читается |
 |----------|--------------|
-| Jira-задача | скилл `web-fetcher` (Jira REST + токен) |
+| Jira-задача | `web-fetcher` → Jira REST API (как у `senior-backend-developer`) |
+| Confluence | `web-fetcher` → Confluence REST API (`pageId` из URL страницы) |
 | Pull Request | локальный `git diff` (приоритет), fallback — Stash REST через `web-fetcher` |
-| Confluence | MCP Atlassian (`confluence_get_page`), fallback — `web-fetcher` |
+
+Встроенный `WebFetch` и MCP Atlassian **не используются**. Рецепты: `skills/requirements-analysis/references/sources.md`.
 
 ---
 
@@ -98,7 +100,7 @@ manual-qa/
 - `test-case-writer` — генерация XML-кейсов по образцу (+ `validate_xml.py`)
 - `checklist-writer` — чек-листы
 - `test-plan-writer` — тест-план
-- `web-fetcher` — HTTP к Jira/Stash через корпоративный SSL
+- `web-fetcher` — Jira + Confluence + Stash REST (корпоративный SSL, `scripts/web_fetch.py`)
 
 ---
 

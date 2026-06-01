@@ -1,96 +1,138 @@
 # Source extraction recipes
 
-Concrete commands for pulling requirements from each source. Never print tokens or cookies.
+Корпоративные HTTP-запросы — **только** через скилл `web-fetcher` (`scripts/web_fetch` / `scripts/web_fetch.py`).  
+По аналогии с `senior-backend-developer`: самоподписанный SSL, без встроенного `web_fetch` и без MCP Atlassian.
 
-## 1. Jira task
-
-Use the `web-fetcher` skill (corporate SSL safe). Authorization is a personal token.
+**Авторизация** (один из вариантов, не логировать в консоль):
 
 ```bash
-# Issue fields (summary, description, acceptance criteria, status, links)
+-H 'Authorization: Bearer <TOKEN>'
+# или
+-H 'Authorization: Basic <base64(user:password_or_token)>'
+```
+
+Путь к скрипту из корня скилла: `skills/web-fetcher/scripts/web_fetch`.
+
+---
+
+## 1. Jira — REST API
+
+### Задача по ключу
+
+```bash
 ./scripts/web_fetch \
-  "https://jira.sberbank.ru/rest/api/2/issue/HRM-11330?fields=summary,description,status,issuelinks,labels,attachment" \
+  "https://jira.sberbank.ru/rest/api/2/issue/HRM-11330?fields=summary,description,status,issuetype,issuelinks,labels,attachment,comment" \
   -H 'Authorization: Bearer <TOKEN>' \
   -H 'Content-Type: application/json' \
   -o jira-issue.json
 ```
 
-What to extract:
-- `fields.summary`, `fields.description` — main requirement text.
-- Acceptance criteria — often in description or a custom field; search the description for "AC", "Критерии приёмки", numbered lists.
-- `fields.issuelinks` — related stories/bugs that add scope.
-- `fields.attachment` — specs, mockups (note their presence; fetch if needed).
+Из ответа извлеки:
+- `fields.summary`, `fields.description` — текст требований.
+- Критерии приёмки — в `description` или custom field (ищи «AC», «Критерии приёмки», нумерованные списки).
+- `fields.issuelinks` — связанные истории/баги.
+- `fields.attachment` — вложения (при необходимости отдельный запрос на контент).
 
-## 2. Pull Request
+### URL → ключ
 
-### Preferred: local git
+`https://jira.sberbank.ru/browse/HRM-11330` → `HRM-11330`
 
-If the branch is checked out, derive scope from the diff directly.
+### Комментарии (опционально)
 
 ```bash
-# Files changed vs target branch (usually master/develop)
+./scripts/web_fetch \
+  "https://jira.sberbank.ru/rest/api/2/issue/HRM-11330/comment" \
+  -H 'Authorization: Bearer <TOKEN>' \
+  -o jira-comments.json
+```
+
+---
+
+## 2. Confluence — REST API
+
+### Страница по `pageId`
+
+ID берётся из URL:  
+`https://confluence.sberbank.ru/pages/viewpage.action?pageId=23021781342` → `23021781342`
+
+```bash
+./scripts/web_fetch \
+  "https://confluence.sberbank.ru/rest/api/content/23021781342?expand=body.storage,body.view,space,version,ancestors" \
+  -H 'Authorization: Bearer <TOKEN>' \
+  -H 'Content-Type: application/json' \
+  -o confluence-page.json
+```
+
+Из ответа:
+- `title` — заголовок страницы.
+- `body.storage.value` — HTML-контент (основной источник правил).
+- `body.view` — если есть, удобнее для чтения.
+- `ancestors` — контекст иерархии.
+
+### Поиск страницы (если известны space + заголовок)
+
+```bash
+./scripts/web_fetch \
+  "https://confluence.sberbank.ru/rest/api/content/search?cql=space=HRP+and+title~\"Название+страницы\"" \
+  -H 'Authorization: Bearer <TOKEN>' \
+  -o confluence-search.json
+```
+
+Возьми `results[0].id` как `pageId` и запроси страницу полностью (команда выше).
+
+### Дочерние страницы (опционально)
+
+```bash
+./scripts/web_fetch \
+  "https://confluence.sberbank.ru/rest/api/content/23021781342/child/page?limit=50" \
+  -H 'Authorization: Bearer <TOKEN>' \
+  -o confluence-children.json
+```
+
+---
+
+## 3. Pull Request
+
+### Предпочтительно: локальный git
+
+```bash
 git diff --name-status origin/master...HEAD
-
-# Full diff for changed logic
 git diff origin/master...HEAD
-
-# Recent commit messages on the branch (often reference the JIRA-KEY)
 git log --oneline origin/master..HEAD
 ```
 
-Map changes → requirements:
-- New/changed REST endpoint → contract + functional requirement.
-- DTO/field added, made required, removed → contract + regression requirement.
-- New config / feature flag → environment + toggle behavior requirement.
-- Migration / schema change → data + backward-compatibility requirement.
+Маппинг изменений → требования:
+- новый/изменённый REST endpoint → функциональное + контрактное;
+- DTO / обязательные поля → контракт + регресс;
+- конфиг / feature flag → окружение и переключатели;
+- миграции → данные и обратная совместимость.
 
-### Fallback: Stash / Bitbucket REST (when branch is not local)
+### Fallback: Stash / Bitbucket REST
 
 ```bash
-# PR overview
 ./scripts/web_fetch \
   "https://stash.sigma.sbrf.ru/rest/api/1.0/projects/HRPLATFORM/repos/<repo>/pull-requests/<PR_ID>" \
   -H 'Authorization: Bearer <TOKEN>' -o pr.json
 
-# PR changed files
 ./scripts/web_fetch \
   "https://stash.sigma.sbrf.ru/rest/api/1.0/projects/HRPLATFORM/repos/<repo>/pull-requests/<PR_ID>/changes" \
   -H 'Authorization: Bearer <TOKEN>' -o pr-changes.json
-
-# PR diff
-./scripts/web_fetch \
-  "https://stash.sigma.sbrf.ru/rest/api/1.0/projects/HRPLATFORM/repos/<repo>/pull-requests/<PR_ID>/diff" \
-  -H 'Authorization: Bearer <TOKEN>' -o pr-diff.txt
 ```
 
-## 3. Confluence — via MCP Atlassian
-
-Prefer the MCP tool over HTTP. Example (page id from the page URL):
-
-```text
-mcp__Atlassian__confluence_get_page(page_id="17151460968", convert_to_markdown=true)
-```
-
-To find a page when only the title/space is known, use the MCP search tool, then fetch by id.
-
-What to extract:
-- Business rules and process descriptions → functional requirements.
-- Tables of states/permissions → state-transition and authorization cases.
-- Non-functional notes (limits, timeouts, volumes) → NFR requirements.
-
-Fallback over HTTP (only if MCP is unavailable):
-
-```bash
-./scripts/web_fetch \
-  "https://confluence.sberbank.ru/rest/api/content/17151460968?expand=body.storage" \
-  -H 'Authorization: Bearer <TOKEN>' -o confluence-page.json
-```
+---
 
 ## Merge order
 
-When sources disagree, record the contradiction (do not silently pick one):
-1. **Code/PR** = what is actually implemented (ground truth for current behavior).
-2. **Jira** = what was requested.
-3. **Confluence** = broader business context / rules.
+При противоречиях фиксируй в «⚠️ Противоречия», не выбирай молча:
 
-A mismatch between (1) and (2)/(3) is itself a finding to report.
+1. **PR / код** — что реально сделано.
+2. **Jira** — что заказано.
+3. **Confluence** — бизнес-правила и контекст.
+
+---
+
+## Запрещено
+
+- ❌ Встроенный `web_fetch` / `WebFetch` GigaCode (SSL в корп. сети).
+- ❌ MCP Atlassian для Jira/Confluence в workflow `senior-manual-qa`.
+- ❌ Вывод токенов и паролей в лог или ответ пользователю.

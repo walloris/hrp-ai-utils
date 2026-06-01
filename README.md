@@ -118,8 +118,8 @@ hrp-ai-utils/
 
 | Сервис | Как подключить |
 |--------|----------------|
-| **Jira** | Скилл `web-fetcher` + личный токен в заголовке |
-| **Confluence** | MCP Atlassian (`confluence_get_page`) |
+| **Jira** | `web-fetcher` → Jira REST (`/rest/api/2/issue/<KEY>`), Bearer/Basic |
+| **Confluence** | `web-fetcher` → Confluence REST (`/rest/api/content/<pageId>`) |
 | **Stash / Bitbucket PR** | Локальный `git diff` или REST через `web-fetcher` |
 | **OpenSearch / логи** | MCP `mcp-opensearch` + cookie из Kibana — см. [инструкцию](gigacode/mcp/mcp-opensearch/README.md) |
 
