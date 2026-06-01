@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  TODO: ЗАМЕНИТЬ ЭТОТ ФАЙЛ НА РЕАЛЬНЫЙ ОБРАЗЕЦ XML ПРОЕКТА.
+  Это временный placeholder-эталон. test-case-writer ОБЯЗАН зеркалить
+  структуру именно этого файла (имена узлов, порядок, вложенность) 1:1.
+  Как только сюда ляжет настоящий пример (TestRail / Test IT / Zephyr / Allure / кастом HRP),
+  скилл начнёт генерировать кейсы по нему без изменений в коде.
+
+  Структура ниже — нейтральный generic-вариант. Подгони references/xml-format.md под реальный образец.
+-->
+<test-suite name="TODO: имя набора тестов" feature="TODO: фича/модуль">
+  <test-case id="TC-R1-01" priority="P1" type="positive">
+    <title>[P1] Краткое название проверки — условие</title>
+    <requirement>R1</requirement>
+    <preconditions>TODO: предусловия (состояние системы, тестовые данные)</preconditions>
+    <test-data>TODO: конкретные входные значения</test-data>
+    <steps>
+      <step number="1">
+        <action>TODO: действие пользователя/системы</action>
+        <expected>TODO: наблюдаемый ожидаемый результат шага</expected>
+      </step>
+      <step number="2">
+        <action>TODO: следующее действие</action>
+        <expected>TODO: ожидаемый результат</expected>
+      </step>
+    </steps>
+    <expected-result>TODO: итоговый ожидаемый результат кейса</expected-result>
+  </test-case>
+
+  <test-case id="TC-R1-02" priority="P1" type="negative">
+    <title>[P1] Та же фича — негативный сценарий</title>
+    <requirement>R1</requirement>
+    <preconditions>TODO</preconditions>
+    <test-data>TODO: граничное/некорректное значение</test-data>
+    <steps>
+      <step number="1">
+        <action>TODO</action>
+        <expected>TODO: корректная обработка ошибки</expected>
+      </step>
+    </steps>
+    <expected-result>TODO: система отклоняет ввод и сообщает об ошибке</expected-result>
+  </test-case>
+</test-suite>
